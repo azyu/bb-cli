@@ -96,12 +96,12 @@ jobs:
 
           mkdir staging
           cp "bb${{ matrix.ext }}" staging/
-          cp README.md staging/
+          cp README.MD staging/
 
           if [[ "${{ matrix.archive_ext }}" == "tar.gz" ]]; then
-            tar -czf "${ARCHIVE_NAME}.tar.gz" -C staging "bb${{ matrix.ext }}" README.md
+            tar -czf "${ARCHIVE_NAME}.tar.gz" -C staging "bb${{ matrix.ext }}" README.MD
           else
-            cd staging && zip -r "../${ARCHIVE_NAME}.zip" "bb${{ matrix.ext }}" README.md && cd ..
+            cd staging && zip -r "../${ARCHIVE_NAME}.zip" "bb${{ matrix.ext }}" README.MD && cd ..
           fi
 
       - name: Upload artifact
