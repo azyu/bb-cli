@@ -97,11 +97,12 @@ jobs:
           mkdir staging
           cp "bb${{ matrix.ext }}" staging/
           cp README.MD staging/
+          cp LICENSE staging/
 
           if [[ "${{ matrix.archive_ext }}" == "tar.gz" ]]; then
-            tar -czf "${ARCHIVE_NAME}.tar.gz" -C staging "bb${{ matrix.ext }}" README.MD
+            tar -czf "${ARCHIVE_NAME}.tar.gz" -C staging "bb${{ matrix.ext }}" README.MD LICENSE
           else
-            cd staging && zip -r "../${ARCHIVE_NAME}.zip" "bb${{ matrix.ext }}" README.MD && cd ..
+            cd staging && zip -r "../${ARCHIVE_NAME}.zip" "bb${{ matrix.ext }}" README.MD LICENSE && cd ..
           fi
 
       - name: Upload artifact
@@ -144,3 +145,34 @@ jobs:
           else
             gh release create "${TAG}" dist/* --title "${TAG}" --generate-notes --repo "${GITHUB_REPOSITORY}"
           fi
+
+      - name: Update Homebrew formula
+        env:
+          GH_TOKEN: ${{ secrets.HOMEBREW_TAP_TOKEN }}
+        run: |
+          set -euo pipefail
+          TAG="${{ inputs.release_tag }}"
+          VERSION="${TAG#v}"
+
+          gh release download "${TAG}" \
+            --repo "${GITHUB_REPOSITORY}" \
+            --pattern "checksums.txt" --dir .
+
+          DARWIN_ARM64_SHA=$(grep "darwin_arm64" checksums.txt | awk '{print $1}')
+          LINUX_AMD64_SHA=$(grep "linux_amd64" checksums.txt | awk '{print $1}')
+          LINUX_ARM64_SHA=$(grep "linux_arm64" checksums.txt | awk '{print $1}')
+
+          git clone "https://x-access-token:${GH_TOKEN}@github.com/azyu/homebrew-tap.git" tap
+          cd tap
+          sed -e "s|{{VERSION}}|${VERSION}|g" \
+              -e "s|{{DARWIN_ARM64_SHA256}}|${DARWIN_ARM64_SHA}|g" \
+              -e "s|{{LINUX_AMD64_SHA256}}|${LINUX_AMD64_SHA}|g" \
+              -e "s|{{LINUX_ARM64_SHA256}}|${LINUX_ARM64_SHA}|g" \
+              bb.rb.template > bb.rb
+
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add bb.rb
+          git diff --cached --quiet && echo "No formula changes" && exit 0
+          git commit -m "feat: update bb to ${VERSION}"
+          git push origin main

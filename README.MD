@@ -30,8 +30,15 @@ bb pr --help          # group: list subcommands
 bb pr create --help   # leaf: show flags with descriptions
 ```
 
-## Requirements
-- Go `1.26+`
+## Install
+
+### Homebrew (macOS Apple Silicon / Linux)
+```bash
+brew install azyu/tap/bb
+```
+
+### From source
+Requires Go `1.26+`.
 
 ## Build
 ```bash
