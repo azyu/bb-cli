@@ -38,3 +38,4 @@
 - [x] Make release build workflow manual-only and create `v0.0.1` tag on current HEAD - owner: agent
 - [x] Restrict CI lint/test/build to Ubuntu Linux only - owner: agent
 - [x] Fix Release Build publish step to run without local git checkout context - owner: agent
+- [x] Remove setup-go cache warnings when go.sum is absent - owner: agent
