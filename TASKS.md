@@ -33,3 +33,6 @@
 - [x] Switch default config path to `~/.config/bb/config.json` with compatibility fallback - owner: agent
 - [x] Create project-scoped skills under `.agents/skills` - owner: agent
 - [x] Initialize git repository - owner: agent
+- [x] Add GitHub Actions for CI and release builds (Windows/macOS/Linux) - owner: agent
+- [x] Enforce release tag rule as `vMAJOR.MINOR.PATCH` with initial version `v0.0.1` - owner: agent
+- [x] Make release build workflow manual-only and create `v0.0.1` tag on current HEAD - owner: agent
