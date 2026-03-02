@@ -1827,7 +1827,7 @@ var zshCompletionScript = strings.Join([]string{
 	"  esac",
 	`  [[ -n "$subcmds" ]] && _describe 'subcommand' subcmds`,
 	"}",
-	"_bb",
+	"compdef _bb bb",
 }, "\n")
 
 var fishCompletionScript = strings.Join([]string{
