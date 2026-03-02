@@ -111,8 +111,8 @@ jobs:
           set -euo pipefail
           TAG="${{ inputs.release_tag }}"
 
-          if gh release view "${TAG}" >/dev/null 2>&1; then
-            gh release upload "${TAG}" dist/* --clobber
+          if gh release view "${TAG}" --repo "${GITHUB_REPOSITORY}" >/dev/null 2>&1; then
+            gh release upload "${TAG}" dist/* --clobber --repo "${GITHUB_REPOSITORY}"
           else
-            gh release create "${TAG}" dist/* --title "${TAG}" --generate-notes
+            gh release create "${TAG}" dist/* --title "${TAG}" --generate-notes --repo "${GITHUB_REPOSITORY}"
           fi
