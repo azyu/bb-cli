@@ -538,6 +538,12 @@ func runPRCreate(args []string, stdout, stderr io.Writer) int {
 		fmt.Fprintln(stderr, "--destination is required")
 		return 1
 	}
+	switch *output {
+	case "json", "text":
+	default:
+		fmt.Fprintf(stderr, "unsupported output format: %s\n", *output)
+		return 1
+	}
 
 	client, err := newClientFromProfile(*profile)
 	if err != nil {
@@ -623,6 +629,12 @@ func runPRMerge(args []string, stdout, stderr io.Writer) int {
 	}
 	if _, err := strconv.Atoi(idStr); err != nil {
 		fmt.Fprintf(stderr, "--id must be a number: %s\n", idStr)
+		return 1
+	}
+	switch *output {
+	case "json", "text":
+	default:
+		fmt.Fprintf(stderr, "unsupported output format: %s\n", *output)
 		return 1
 	}
 
