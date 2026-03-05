@@ -504,11 +504,22 @@ type pullRequestDetail struct {
 		Branch struct {
 			Name string `json:"name"`
 		} `json:"branch"`
+		Repository struct {
+			FullName string `json:"full_name"`
+			Links    struct {
+				HTML struct {
+					Href string `json:"href"`
+				} `json:"html"`
+			} `json:"links"`
+		} `json:"repository"`
 	} `json:"source"`
 	Destination struct {
 		Branch struct {
 			Name string `json:"name"`
 		} `json:"branch"`
+		Repository struct {
+			FullName string `json:"full_name"`
+		} `json:"repository"`
 	} `json:"destination"`
 	Participants []struct {
 		User struct {
@@ -1220,10 +1231,25 @@ func runPRCheckout(args []string, stdout, stderr io.Writer) int {
 		return 1
 	}
 
+	srcRepo := strings.TrimSpace(detail.Source.Repository.FullName)
+	dstRepo := strings.TrimSpace(detail.Destination.Repository.FullName)
+	isFork := srcRepo != "" && dstRepo != "" && srcRepo != dstRepo
+
 	ctx := context.Background()
-	if _, err := gitCommandRunner(ctx, "", "fetch", "origin", branch); err != nil {
-		fmt.Fprintf(stderr, "git fetch failed: %v\n", err)
-		return 1
+	if isFork {
+		forkURL := strings.TrimSpace(detail.Source.Repository.Links.HTML.Href)
+		if forkURL == "" {
+			forkURL = fmt.Sprintf("https://bitbucket.org/%s", srcRepo)
+		}
+		if _, err := gitCommandRunner(ctx, "", "fetch", forkURL, branch+":"+branch); err != nil {
+			fmt.Fprintf(stderr, "git fetch from fork failed: %v\n", err)
+			return 1
+		}
+	} else {
+		if _, err := gitCommandRunner(ctx, "", "fetch", "origin", branch); err != nil {
+			fmt.Fprintf(stderr, "git fetch failed: %v\n", err)
+			return 1
+		}
 	}
 	if _, err := gitCommandRunner(ctx, "", "checkout", branch); err != nil {
 		fmt.Fprintf(stderr, "git checkout failed: %v\n", err)

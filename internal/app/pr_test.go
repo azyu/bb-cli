@@ -841,8 +841,15 @@ func TestPRRequestChangesRequiredID(t *testing.T) {
 func TestPRCheckout(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		_ = json.NewEncoder(w).Encode(map[string]any{
-			"id":     42,
-			"source": map[string]any{"branch": map[string]any{"name": "feature/cool"}},
+			"id": 42,
+			"source": map[string]any{
+				"branch":     map[string]any{"name": "feature/cool"},
+				"repository": map[string]any{"full_name": "acme/app"},
+			},
+			"destination": map[string]any{
+				"branch":     map[string]any{"name": "main"},
+				"repository": map[string]any{"full_name": "acme/app"},
+			},
 		})
 	}))
 	defer server.Close()
@@ -872,6 +879,60 @@ func TestPRCheckout(t *testing.T) {
 	}
 	if gitCalls[0][0] != "fetch" || gitCalls[0][1] != "origin" || gitCalls[0][2] != "feature/cool" {
 		t.Fatalf("unexpected fetch args: %v", gitCalls[0])
+	}
+	if gitCalls[1][0] != "checkout" || gitCalls[1][1] != "feature/cool" {
+		t.Fatalf("unexpected checkout args: %v", gitCalls[1])
+	}
+	if !strings.Contains(stdout.String(), "Switched to branch 'feature/cool' from PR #42") {
+		t.Fatalf("unexpected output: %q", stdout.String())
+	}
+}
+
+func TestPRCheckoutFork(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		_ = json.NewEncoder(w).Encode(map[string]any{
+			"id": 42,
+			"source": map[string]any{
+				"branch": map[string]any{"name": "feature/cool"},
+				"repository": map[string]any{
+					"full_name": "contributor/app",
+					"links":     map[string]any{"html": map[string]any{"href": "https://bitbucket.org/contributor/app"}},
+				},
+			},
+			"destination": map[string]any{
+				"branch":     map[string]any{"name": "main"},
+				"repository": map[string]any{"full_name": "acme/app"},
+			},
+		})
+	}))
+	defer server.Close()
+
+	t.Setenv("BB_CONFIG_PATH", filepath.Join(t.TempDir(), "config.json"))
+	cfg := &config.Config{}
+	cfg.SetProfile("default", "token-123", server.URL+"/2.0")
+	if err := cfg.Save(); err != nil {
+		t.Fatalf("save config failed: %v", err)
+	}
+
+	var gitCalls [][]string
+	origRunner := gitCommandRunner
+	gitCommandRunner = func(ctx context.Context, dir string, args ...string) ([]byte, error) {
+		gitCalls = append(gitCalls, args)
+		return []byte("ok"), nil
+	}
+	defer func() { gitCommandRunner = origRunner }()
+
+	var stdout, stderr bytes.Buffer
+	code := Run([]string{"pr", "checkout", "--workspace", "acme", "--repo", "app", "--id", "42"}, &stdout, &stderr)
+	if code != 0 {
+		t.Fatalf("expected exit 0, got %d, stderr=%q", code, stderr.String())
+	}
+	if len(gitCalls) != 2 {
+		t.Fatalf("expected 2 git calls, got %d", len(gitCalls))
+	}
+	// fork: should fetch from fork URL, not origin
+	if gitCalls[0][0] != "fetch" || gitCalls[0][1] != "https://bitbucket.org/contributor/app" || gitCalls[0][2] != "feature/cool:feature/cool" {
+		t.Fatalf("unexpected fork fetch args: %v", gitCalls[0])
 	}
 	if gitCalls[1][0] != "checkout" || gitCalls[1][1] != "feature/cool" {
 		t.Fatalf("unexpected checkout args: %v", gitCalls[1])
