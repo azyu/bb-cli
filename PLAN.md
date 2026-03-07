@@ -1,20 +1,24 @@
 # PLAN
 
 ## Objective
-- Build a Bitbucket CLI with a `gh`-like structure focused on Bitbucket Cloud MVP.
+- Rebuild `bb` as a Rust-first Bitbucket Cloud CLI with a `gh`-like structure.
+- Keep the public binary name `bb`.
+- Complete phase 1 with Rust MVP parity for the documented command set only.
 
 ## Phases
-1. Research and command/API scope definition.
-2. Project bootstrap (toolchain and repository structure).
-3. Core implementation (`auth`, `api`, `repo`, `pr`).
-4. Validation and release readiness.
+1. Rust migration reset (scope, plan/task tracker, docs baseline).
+2. Rust workspace bootstrap (`bb-cli` + `bb-core`) and shared foundations.
+3. MVP command port (`auth`, `api`, `repo`, `pr`, `pipeline`, `issue`, `wiki`, `completion`, `version`).
+4. Rust-only validation, release workflow conversion, and Go removal.
 
 ## Success Criteria
-- Core commands are documented and implemented for Cloud MVP.
-- Authentication, pagination, and output modes work as specified.
-- Basic verification workflow is documented and repeatable.
+- Rust workspace builds and tests cleanly with Cargo.
+- The documented Cloud MVP commands are implemented in Rust and verified.
+- Config precedence, auth modes, repo inference, pagination, and output modes match the documented contract.
+- CI and release workflows build Rust artifacts named `bb`.
+- Go entrypoints and Go-only workflows are removed after Rust verification passes.
 
 ## Current Phase
-- Phase: 4 (Validation and release readiness)
+- Phase: complete
 - Owner: agent
-- Notes: Core wrappers for `auth`, `api`, `repo list`, `pr list/create`, `pipeline list/run`, `wiki list/get/put`, `issue list/create/update`, and `completion` are implemented with tests. Auth supports login/status/logout plus both Basic (API token with username/email) and Bearer modes. Repo-scoped commands can infer workspace/repo from local Bitbucket `origin`. Next focus is release hardening and stronger wiki git auth secret handling.
+- Notes: Phase 1 Rust migration is complete. The Rust 2-crate workspace (`bb-cli`, `bb-core`) is now the only implementation, CI/release workflows target Cargo, and the legacy Go source tree has been removed. Agent-oriented follow-up ideas remain tracked in `docs/SPEC.md` and `TASKS.md` as phase 2 backlog, without expanding the current MVP scope.

@@ -3,13 +3,16 @@
 | English | [한국어](README.ko-kr.MD) |
 
 ## Overview
-`bb` is a Go-based Bitbucket Cloud CLI inspired by `gh`-style command grouping.
+`bb` is a Rust-based Bitbucket Cloud CLI inspired by `gh`-style command grouping.
+
+Technical spec and active implementation contract:
+- `docs/SPEC.md`
 
 Implemented commands:
 - `bb auth <login|status|logout>`
 - `bb api`
 - `bb repo <list>`
-- `bb pr <list|create|merge|view|edit|approve|unapprove|decline|request-changes|comment|comments|diff|statuses|checkout|activity>`
+- `bb pr <list|create|merge>`
 - `bb pipeline <list|run>`
 - `bb wiki <list|get|put>`
 - `bb issue <list|create|update>`
@@ -24,26 +27,23 @@ bb pr create --help   # leaf: show flags with descriptions
 
 ## Install
 
-### Homebrew (macOS Apple Silicon / Linux)
-```bash
-brew install azyu/tap/bb
-```
-
 ### From source
-Requires Go `1.26+`.
+Requires Rust `1.93+`.
 
 ## Build
 ```bash
-make build        # -> ./bb (version + commit + date auto-injected)
-make install      # -> $GOPATH/bin/bb
+make build        # -> rust/target/debug/bb
+make install      # -> ~/.local/bin/bb
 make test         # run all tests
-make cover        # test coverage report
+make lint         # cargo check --all-targets
+make fmt          # cargo fmt --all
 make help         # show all targets
 ```
 
 Or build manually:
 ```bash
-go build -o ./bb ./cmd/bb
+BB_BUILD_COMMIT=$(git rev-parse --short HEAD) BB_BUILD_DATE=$(date -u +"%Y-%m-%dT%H:%M:%SZ") \
+  cargo build --manifest-path rust/Cargo.toml -p bb-cli --bin bb --release
 ```
 
 ## How To Create A Bitbucket API Token
@@ -238,19 +238,15 @@ Config path priority:
 2. `$XDG_CONFIG_HOME/bb/config.json` (if `XDG_CONFIG_HOME` is set)
 3. `~/.config/bb/config.json` (default)
 
-Backward compatibility:
-- If the new default file is missing, the CLI also checks the legacy Go user-config location for `bb/config.json`.
-
 Security note:
 - Token is currently stored as plain text in the config file (MVP state).
-- Config file is written with `0600` permissions.
+- Config directory is created on demand under the resolved XDG path.
 
 ## Development
 ```bash
-make test         # run all tests
-make cover        # coverage report for internal packages
-make lint         # go vet
-make fmt          # gofmt
+make test
+make lint
+make fmt
 ```
 
 For detailed command contracts:

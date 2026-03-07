@@ -3,13 +3,16 @@
 영문 문서: `README.MD`
 
 ## 개요
-`bb`는 `gh` 스타일 명령 구성을 참고한 Go 기반 Bitbucket Cloud CLI입니다.
+`bb`는 `gh` 스타일 명령 구성을 참고한 Rust 기반 Bitbucket Cloud CLI입니다.
+
+기술 스펙과 현재 구현 계약 문서:
+- `docs/SPEC.md`
 
 현재 구현된 명령:
 - `bb auth <login|status|logout>`
 - `bb api`
 - `bb repo <list>`
-- `bb pr <list|create|merge|view|edit|approve|unapprove|decline|request-changes|comment|comments|diff|statuses|checkout|activity>`
+- `bb pr <list|create|merge>`
 - `bb pipeline <list|run>`
 - `bb wiki <list|get|put>`
 - `bb issue <list|create|update>`
@@ -24,26 +27,23 @@ bb pr create --help   # 리프: 플래그와 설명 표시
 
 ## 설치
 
-### Homebrew (macOS Apple Silicon / Linux)
-```bash
-brew install azyu/tap/bb
-```
-
 ### 소스에서 빌드
-Go `1.26+` 필요.
+Rust `1.93+` 필요.
 
 ## 빌드
 ```bash
-make build        # -> ./bb (version + commit + date 자동 주입)
-make install      # -> $GOPATH/bin/bb
+make build        # -> rust/target/debug/bb
+make install      # -> ~/.local/bin/bb
 make test         # 전체 테스트 실행
-make cover        # 테스트 커버리지 리포트
+make lint         # cargo check --all-targets
+make fmt          # cargo fmt --all
 make help         # 모든 타겟 표시
 ```
 
 또는 수동 빌드:
 ```bash
-go build -o ./bb ./cmd/bb
+BB_BUILD_COMMIT=$(git rev-parse --short HEAD) BB_BUILD_DATE=$(date -u +"%Y-%m-%dT%H:%M:%SZ") \
+  cargo build --manifest-path rust/Cargo.toml -p bb-cli --bin bb --release
 ```
 
 ## Bitbucket API Token 발급 방법
@@ -238,19 +238,15 @@ bb wiki put --workspace <workspace-slug> --repo <repo-slug> --page Home.md --con
 2. `$XDG_CONFIG_HOME/bb/config.json` (`XDG_CONFIG_HOME` 설정 시)
 3. `~/.config/bb/config.json` (기본값)
 
-호환성:
-- 새 기본 경로 파일이 없으면, 레거시 Go user-config 경로의 `bb/config.json`도 함께 확인합니다.
-
 보안 참고:
 - 현재 토큰은 설정 파일에 평문으로 저장됩니다(MVP 단계).
-- 설정 파일 권한은 `0600`으로 저장됩니다.
+- 설정 디렉터리는 해석된 XDG 경로 아래에 필요 시 생성됩니다.
 
 ## 개발
 ```bash
-make test         # 전체 테스트 실행
-make cover        # 내부 패키지 커버리지 리포트
-make lint         # go vet
-make fmt          # gofmt
+make test
+make lint
+make fmt
 ```
 
 명령 계약 상세 문서:

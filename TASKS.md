@@ -1,42 +1,19 @@
 # TASKS
 
-- [x] Create initial reference document (`docs/references.md`) - owner: agent
-- [x] Create initial collaboration guide (`AGENTS.md`) - owner: agent
-- [x] Add multi-agent coordination rules (`PLAN.md`/`TASKS.md`) to `AGENTS.md` - owner: agent
-- [x] Choose language/toolchain and initialize project skeleton - owner: agent
-- [x] Define command contracts for `bb auth/repo/pr/pipeline/api` - owner: agent
-- [x] Implement shared Bitbucket Cloud API client (auth + pagination) - owner: agent
-- [x] Improve `bb auth login` token flag UX (`--with-token`, bare `--token` handling) - owner: agent
-- [x] Add Basic auth mode for API tokens (`--username` / `BITBUCKET_USERNAME`) with Bearer fallback - owner: agent
-- [x] Add `bb auth logout` command with profile removal handling - owner: agent
-- [x] Distinguish wiki Git auth user for personal API token vs access-token style profiles - owner: agent
-- [x] Run live smoke tests on `locomotivelabs/playground` for previously failing write flows (issue/wiki write OK; pipeline run returned upstream 404 on repo settings) - owner: agent
-- [x] Add git-remote inference for `bb pr list` so `--workspace/--repo` are optional in Bitbucket repos - owner: agent
-- [x] Extend git-remote inference to other repo-scoped commands (`repo/pr/pipeline/issue/wiki`) and update docs - owner: agent
-- [x] Improve `bb pr list` table output to `gh pr list`-like style (summary line + branch + created-at) - owner: agent
-- [x] Add ANSI color support for `bb pr list` table output with `BB_COLOR`/`NO_COLOR` control - owner: agent
-- [x] Consolidate duplicate token scope sections in README (single matrix table) - owner: agent
-- [x] Implement `bb pr` and `bb pipeline` concrete subcommands (replace stubs) - owner: agent
-- [x] Add shell completion generation command - owner: agent
-- [x] Implement `bb issue list` concrete subcommand - owner: agent
-- [x] Implement `bb issue` write subcommands (`create`/`update`) - owner: agent
-- [x] Implement `bb wiki` read/write subcommands - owner: agent
-- [x] Improve wiki git auth secret handling (avoid credential exposure in args/process list) - owner: agent
-- [x] Implement `bb version` with SemVer + git hash build metadata - owner: agent
-- [x] Add general developer token scope preset to README (EN/KR) - owner: agent
-- [x] Add recommended Bitbucket token scope matrix to README (EN/KR) - owner: agent
-- [x] Update `docs/references.md` with token scope strategy and developer preset - owner: agent
-- [x] Add AGENTS guideline to keep `docs/references.md` updated when assumptions change - owner: agent
-- [x] Add language switch link in `README.MD` - owner: agent
-- [x] Split README into EN/KR files and add token creation guide - owner: agent
-- [x] Add bilingual `README.MD` (EN/KR) - owner: agent
-- [x] Switch default config path to `~/.config/bb/config.json` with compatibility fallback - owner: agent
-- [x] Create project-scoped skills under `.agents/skills` - owner: agent
-- [x] Initialize git repository - owner: agent
-- [x] Add GitHub Actions for CI and release builds (Windows/macOS/Linux) - owner: agent
-- [x] Enforce release tag rule as `vMAJOR.MINOR.PATCH` with initial version `v0.0.1` - owner: agent
-- [x] Make release build workflow manual-only and create `v0.0.1` tag on current HEAD - owner: agent
-- [x] Restrict CI lint/test/build to Ubuntu Linux only - owner: agent
-- [x] Fix Release Build publish step to run without local git checkout context - owner: agent
-- [x] Remove setup-go cache warnings when go.sum is absent - owner: agent
-- [x] Align PR contracts/docs and add strict enum validation/tests for `bb pr list --state` and `bb pr merge --strategy` - owner: agent
+- [x] Re-baseline planning/docs for Rust migration (`PLAN.md`, `TASKS.md`, `docs/references.md`) - owner: agent
+- [x] Bootstrap Cargo workspace with `bb-cli` and `bb-core` crates - owner: agent
+- [x] Implement shared Rust foundations (errors, config, version, output routing, git repo inference, Bitbucket client, pagination) - owner: agent
+- [x] Port `bb version`, root help, and `bb completion` to Rust - owner: agent
+- [x] Port `bb auth` commands to Rust - owner: agent
+- [x] Port `bb api` and `bb repo list` to Rust - owner: agent
+- [x] Port `bb pr list/create/merge` to Rust - owner: agent
+- [x] Port `bb pipeline list/run` to Rust - owner: agent
+- [x] Port `bb issue list/create/update` to Rust - owner: agent
+- [x] Port `bb wiki list/get/put` to Rust - owner: agent
+- [x] Rewrite README/build instructions and command docs for the Rust implementation - owner: agent
+- [x] Convert CI and release workflows from Go to Rust - owner: agent
+- [x] Remove Go entrypoints, Go tests, and Go-specific build files after Rust verification passes - owner: agent
+
+## Backlog
+
+- [ ] Evaluate phase 2 agent-first extensions (`--describe` or schema introspection, `--dry-run`, separate automation surface if needed) - owner: agent

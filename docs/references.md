@@ -35,6 +35,18 @@ Observed structural patterns to reuse:
 - Global flags reused across commands (`--login`, `--repo`, output-related flags)
 - Practical command naming and predictable hierarchy
 
+## 2.1) Agent-Oriented CLI Reference
+
+Reference:
+- Justin Poehnelt, "Improving Command-Line Programs for LLMs": https://justin.poehnelt.com/posts/llm-friendly-cli-programs/
+- Korean summary/discussion: https://news.hada.io/topic?id=27246
+
+Observed patterns to reuse:
+- Harden input handling so conflicting or ambiguous flags fail before side effects.
+- Keep a machine-readable surface explicit instead of forcing agents to scrape prose.
+- Support flexible formatting per client (`text`/`table` for humans, `json` for automation).
+- Treat introspection and dry-run support as valuable follow-up features for discovery and safe execution.
+
 ## 3) Bitbucket Cloud API Reference
 - REST entry: https://developer.atlassian.com/cloud/bitbucket/rest/
 - Intro: https://developer.atlassian.com/cloud/bitbucket/rest/intro/
@@ -146,36 +158,47 @@ Avoid by default:
 - `delete:*`
 - `write:permission:bitbucket` unless explicitly required
 
-## 8) Implementation Status (2026-02-23)
+## 8) Implementation Status (2026-03-07)
 
-Implemented:
-- Shared API client with token auth and pagination (`next` traversal)
+Current repository state:
+- The Rust rewrite is now the only implementation in this repository.
+- The legacy Go source tree and Go build surface have been removed after Rust verification.
+
+Rust migration decisions:
+- Toolchain target: Rust
+- Workspace shape: `bb-cli` + `bb-core`
+- Public binary name remains `bb`
+- Phase 1 scope is limited to the documented MVP command set:
+  - `bb auth login|status|logout`
+  - `bb api`
+  - `bb repo list`
+  - `bb pr list|create|merge`
+  - `bb pipeline list|run`
+  - `bb issue list|create|update`
+  - `bb wiki list|get|put`
+  - `bb completion`
+  - `bb version`
+- Go-only PR extras (`view`, `edit`, `approve`, `decline`, `comment`, `comments`, `diff`, `statuses`, `unapprove`, `request-changes`, `checkout`, `activity`) are out of phase 1 scope.
+- Go config/runtime compatibility is intentionally dropped for the Rust rewrite.
+
+Behavior preserved by the Rust rewrite:
+- Shared API client behavior with token auth and `next`-link pagination
 - Optional Basic auth mode via profile username (`bb auth login --username` / `BITBUCKET_USERNAME`)
-- `bb auth login`, `bb auth status`, `bb auth logout`
-- `bb api`
-- `bb repo list`
-- `bb pr list`, `bb pr create`, `bb pr merge`
-- Repo-scoped commands support local Git `origin` inference for Bitbucket remotes when `--workspace/--repo` are omitted:
-  - `bb pr list`, `bb pr create`, `bb pr merge`
-  - `bb pipeline list`, `bb pipeline run`
-  - `bb issue list`, `bb issue create`, `bb issue update`
-  - `bb wiki list`, `bb wiki get`, `bb wiki put`
-  - `bb repo list` infers `--workspace`
-- `bb pipeline list`, `bb pipeline run`
-- `bb wiki list`, `bb wiki get`, `bb wiki put` (git-based wiki repository operations)
-- `bb issue list`, `bb issue create`, `bb issue update`
-- `bb pr list` table output follows a `gh pr list`-like summary + columns layout
-- `bb pr list` table output supports ANSI color in terminal mode (`BB_COLOR` / `NO_COLOR`)
+- Repo-scoped local Git `origin` inference for Bitbucket remotes
+- `bb pr list` table output shape and color controls (`BB_COLOR` / `NO_COLOR`)
 - `bb completion <bash|zsh|fish|powershell>`
 - `bb version` / `bb --version` and root help version display
 
-Remaining wrappers:
-- None in current MVP command set
+Current agent-oriented alignment:
+- The Rust MVP keeps JSON success/error contracts for automation-facing commands.
+- Command parsing rejects invalid combinations before network or git write operations.
+- Structured passthrough parameters (`q`, `sort`, `fields`) are preserved for precise automation.
+- Schema introspection and dry-run support remain explicit phase 2 candidates rather than implicit scope creep in MVP.
 
 ## 9) Implementation Direction (Next)
-1. Improve ergonomics (global debug flag and clearer repo-context diagnostics for local Git remote inference).
-2. Add stronger secret handling for git-based wiki auth flows (avoid credential exposure in process args).
-3. Harden auth storage strategy beyond plaintext config for post-MVP.
+1. Harden release packaging across additional OS/arch targets if distribution expands beyond local/personal use.
+2. Evaluate agent-first extensions such as schema introspection, dry-run support, or a separate automation surface.
+3. Keep the Cloud MVP contract stable while adding any post-MVP commands.
 
 ## 10) Versioning Strategy
 
@@ -186,7 +209,7 @@ Remaining wrappers:
   - `bb version`
   - `bb --version`
   - root help output when running `bb` with no args
-- Build-time injection fields:
-  - `bitbucket-cli/internal/version.Version`
-  - `bitbucket-cli/internal/version.Commit`
-  - `bitbucket-cli/internal/version.BuildDate`
+- Build-time injection inputs:
+  - Cargo package version
+  - `BB_BUILD_COMMIT`
+  - `BB_BUILD_DATE`

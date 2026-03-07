@@ -1,38 +1,29 @@
-PKG     := bitbucket-cli/internal/version
-VERSION ?= $(shell git describe --tags --dirty 2>/dev/null || echo "0.0.1")
+VERSION ?= $(shell git describe --tags --dirty 2>/dev/null | sed 's/^v//' || echo "0.0.1")
 COMMIT  ?= $(shell git rev-parse --short HEAD 2>/dev/null || echo "unknown")
 DATE    ?= $(shell date -u +"%Y-%m-%dT%H:%M:%SZ")
 BINARY  := bb
 
-LDFLAGS := -s -w \
-  -X $(PKG).Version=$(VERSION) \
-  -X $(PKG).Commit=$(COMMIT) \
-  -X $(PKG).BuildDate=$(DATE)
-
-.PHONY: build install test cover lint fmt clean help
+.PHONY: build install test fmt lint clean help
 
 build: ## Build binary
-	@go build -trimpath -ldflags '$(LDFLAGS)' -o $(BINARY) ./cmd/bb
+	@BB_BUILD_COMMIT=$(COMMIT) BB_BUILD_DATE=$(DATE) cargo build --manifest-path rust/Cargo.toml -p bb-cli --bin $(BINARY)
 
-install: build ## Install to ~/.local/bin
-	@cp $(BINARY) $(HOME)/.local/bin/$(BINARY)
+install: ## Install release binary to ~/.local/bin
+	@BB_BUILD_COMMIT=$(COMMIT) BB_BUILD_DATE=$(DATE) cargo build --manifest-path rust/Cargo.toml -p bb-cli --bin $(BINARY) --release
+	@mkdir -p $(HOME)/.local/bin
+	@cp rust/target/release/$(BINARY) $(HOME)/.local/bin/$(BINARY)
 
 test: ## Run all tests
-	@go test ./...
+	@cargo test --manifest-path rust/Cargo.toml
 
-cover: ## Show test coverage
-	@go test -coverprofile=coverage.out ./internal/...
-	@go tool cover -func=coverage.out
-	@rm -f coverage.out
+fmt: ## Format Rust source files
+	@cargo fmt --manifest-path rust/Cargo.toml --all
 
-lint: ## Run go vet
-	@go vet ./...
+lint: ## Run cargo check for all targets
+	@cargo check --manifest-path rust/Cargo.toml --all-targets
 
-fmt: ## Format source files
-	@gofmt -w ./cmd ./internal
-
-clean: ## Remove built binary
-	@rm -f $(BINARY)
+clean: ## Remove Rust build artifacts
+	@rm -rf rust/target
 
 help: ## Show this help
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | \

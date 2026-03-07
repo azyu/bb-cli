@@ -6,6 +6,7 @@
 
 Current repository state:
 - `docs/references.md`: baseline research for Bitbucket CLI scope, API references, and MVP direction.
+- `docs/SPEC.md`: canonical technical specification for the active implementation target, including agent-oriented CLI rules.
 - `TASKS.md`: work item tracker for agent-level execution status.
 - `PLAN.md`: high-level plan tracker (phases, success criteria, current focus).
 
@@ -27,7 +28,10 @@ When multiple agents split work, use these files as the single source of executi
 Mandatory startup rule for every agent task:
 1. Read `PLAN.md` first.
 2. Read `TASKS.md` second.
-3. Only then start implementation.
+3. Read `docs/SPEC.md` for the current technical spec and agent-facing behavior constraints.
+4. Only then start implementation.
+
+If there is any ambiguity about command behavior, output contracts, or agent-facing constraints, resolve it against `docs/SPEC.md` before changing code.
 
 Update rules during work:
 - Before starting a task, assign the owner and add `(in progress)` on that task line.
@@ -36,7 +40,7 @@ Update rules during work:
 
 ## Build & Development
 
-Primary toolchain: **Go 1.26+**
+Primary toolchain: **Rust 1.93+**
 
 Useful current commands:
 - List tracked/untracked files quickly:
@@ -47,6 +51,7 @@ Useful current commands:
   ```bash
   sed -n '1,240p' PLAN.md
   sed -n '1,240p' TASKS.md
+  sed -n '1,260p' docs/SPEC.md
   ```
 - Review project reference:
   ```bash
@@ -58,27 +63,25 @@ Useful current commands:
   ```
 - Run CLI locally:
   ```bash
-  go run ./cmd/bb --help
+  cargo run --manifest-path rust/Cargo.toml -p bb-cli --bin bb -- --help
   ```
 - Run all tests:
   ```bash
-  go test ./...
+  cargo test --manifest-path rust/Cargo.toml
   ```
-- Run package coverage:
+- Format Rust files:
   ```bash
-  go test -cover ./internal/...
-  ```
-- Format Go files:
-  ```bash
-  gofmt -w ./cmd ./internal
+  cargo fmt --manifest-path rust/Cargo.toml --all
   ```
 
 ## Code Standards
 
 ### Do
 - Read `PLAN.md` and `TASKS.md` before any implementation task.
+- Read `docs/SPEC.md` for the current implementation contract before coding.
 - Keep changes directly tied to the current task; avoid opportunistic refactors.
 - Prefer the smallest implementation that satisfies requirements.
+- When technical behavior changes, update `docs/SPEC.md` in the same change.
 - When technical choices, API scopes, endpoint usage, or architecture assumptions change, update `docs/references.md` if the change affects project direction.
 - Keep the first release Cloud-only unless explicitly asked otherwise.
 - Mirror proven CLI shape from references (`auth`, `repo`, `pr`, `pipeline`, `issue`, `wiki`, `api`, `completion`).
@@ -101,7 +104,7 @@ Useful current commands:
 
 Always verify at the smallest meaningful scope first.
 
-Current minimum checklist (docs/bootstrap phase):
+Current minimum checklist:
 1. Ensure files are where expected:
    ```bash
    rg --files -uu
@@ -121,17 +124,17 @@ Current minimum checklist (docs/bootstrap phase):
    sed -n '1,260p' AGENTS.md
    ```
 
-Use file-scoped checks first when possible (e.g. `go test ./internal/api`).
+Use file-scoped checks first when possible (e.g. `cargo test --manifest-path rust/Cargo.toml -p bb-core`).
 
 ## Testing
 
-Testing uses Go's standard testing package.
+Testing uses Rust's standard testing support via Cargo.
 
 Rules:
 - Prefer fast, file-scoped tests first.
 - For bug fixes, reproduce with a failing test before implementing the fix.
 - Do not claim a fix is complete until the reproduction test passes.
-- Target 80%+ coverage for active internal packages (`./internal/...`).
+- Prefer focused crate/package tests before running the full workspace.
 
 ## Commit & PR Guidelines
 
