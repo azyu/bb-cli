@@ -14,6 +14,7 @@
 - [x] Convert CI and release workflows from Go to Rust - owner: agent
 - [x] Expand release workflow to publish Linux amd64/arm64, Windows x64/arm64, and macOS arm64 artifacts - owner: agent
 - [x] Auto-publish draft releases after successful release workflow run - owner: agent
+- [x] Derive release binary version from the release tag during release builds - owner: agent
 - [x] Update the Homebrew tap formula and automate tap updates from release workflow - owner: agent
 - [x] Remove Go entrypoints, Go tests, and Go-specific build files after Rust verification passes - owner: agent
 

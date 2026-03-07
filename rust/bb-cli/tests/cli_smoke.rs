@@ -31,7 +31,7 @@ fn version_prints_metadata() {
     assert!(output.status.success());
 
     let stdout = String::from_utf8(output.stdout).expect("stdout should be utf-8");
-    assert!(stdout.contains("bb version 0.0.1"));
+    assert!(stdout.contains(&format!("bb version {}", env!("CARGO_PKG_VERSION"))));
     assert!(stdout.contains("commit:"));
     assert!(stdout.contains("built:"));
 }

@@ -82,7 +82,10 @@ jobs:
           BB_BUILD_DATE: ${{ github.event.repository.updated_at }}
         run: |
           set -euo pipefail
-          cargo build --manifest-path rust/Cargo.toml -p bb-cli --bin bb --release --target "${{ matrix.target }}"
+          VERSION="${{ inputs.release_tag }}"
+          VERSION="${VERSION#v}"
+          BB_BUILD_VERSION="${VERSION}" \
+            cargo build --manifest-path rust/Cargo.toml -p bb-cli --bin bb --release --target "${{ matrix.target }}"
 
       - name: Package archive (unix)
         if: runner.os != 'Windows'

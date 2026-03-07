@@ -1,4 +1,7 @@
-pub const VERSION: &str = env!("CARGO_PKG_VERSION");
+pub const VERSION: &str = match option_env!("BB_BUILD_VERSION") {
+    Some(value) if !value.is_empty() => value,
+    _ => env!("CARGO_PKG_VERSION"),
+};
 pub const COMMIT: &str = match option_env!("BB_BUILD_COMMIT") {
     Some(value) => value,
     None => "unknown",
