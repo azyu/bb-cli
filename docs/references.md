@@ -187,14 +187,14 @@ Rust migration decisions:
   - `bb auth login|status|logout`
   - `bb api`
   - `bb repo list`
-  - `bb pr list|create|merge|get|update|approve|unapprove|request-changes|remove-request-changes|decline|comment|comments|diff|statuses|activity`
+  - `bb pr list|create|merge|get|update|approve|unapprove|request-changes|remove-request-changes|decline|comment|comments|diff|statuses|activity|checkout`
   - `bb pipeline list|run`
   - `bb issue list|create|update`
   - `bb wiki list|get|put`
   - `bb completion`
   - `bb version`
 - Command naming for direct PR wrappers follows Bitbucket Cloud API titles (`get`, `update`, `request-changes`, `remove-request-changes`) instead of older wrapper synonyms (`view`, `edit`).
-- `bb pr checkout` remains out of scope because it requires local Git workflow design beyond a direct REST wrapper.
+- `bb pr checkout` is implemented as a same-repository local Git helper using pull request metadata plus `git fetch origin`; fork-aware checkout remains out of scope.
 - Go config/runtime compatibility is intentionally dropped for the Rust rewrite.
 
 Behavior preserved by the Rust rewrite:
@@ -214,7 +214,7 @@ Current agent-oriented alignment:
 ## 9) Implementation Direction (Next)
 1. Harden release packaging across additional OS/arch targets if distribution expands beyond local/personal use.
 2. Evaluate agent-first extensions such as schema introspection, dry-run support, or a separate automation surface.
-3. Keep the Cloud MVP contract stable while adding any post-MVP commands.
+3. Evaluate fork-aware `bb pr checkout` and other richer local Git helper flows only if local workflow demand justifies the extra scope.
 
 ## 10) Versioning Strategy
 

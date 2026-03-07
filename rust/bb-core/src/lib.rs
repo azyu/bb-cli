@@ -250,6 +250,17 @@ pub struct PrActivityRequest {
 }
 
 #[derive(Debug, Clone)]
+pub struct PrCheckoutRequest {
+    pub workspace: Option<String>,
+    pub repo: Option<String>,
+    pub id: Option<String>,
+    pub branch: Option<String>,
+    pub force: bool,
+    pub profile: Option<String>,
+    pub output: String,
+}
+
+#[derive(Debug, Clone)]
 pub struct PipelineListRequest {
     pub workspace: Option<String>,
     pub repo: Option<String>,
@@ -369,6 +380,7 @@ pub enum PrRequest {
     Diff(PrDiffRequest),
     Statuses(PrStatusesRequest),
     Activity(PrActivityRequest),
+    Checkout(PrCheckoutRequest),
 }
 
 #[derive(Debug, Clone)]

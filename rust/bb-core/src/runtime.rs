@@ -15,9 +15,9 @@ use crate::{
     ApiRequest, AuthLoginRequest, AuthRequest, AuthStatusRequest, CompletionShell,
     IssueCreateRequest, IssueListRequest, IssueRequest, IssueUpdateRequest, ListOutput,
     PipelineListRequest, PipelineRequest, PipelineRunRequest, PrActivityRequest, PrApproveRequest,
-    PrCommentRequest, PrCommentsRequest, PrCreateRequest, PrDeclineRequest, PrDiffRequest,
-    PrGetRequest, PrListRequest, PrMergeRequest, PrRemoveRequestChangesRequest, PrRequest,
-    PrRequestChangesRequest, PrStatusesRequest, PrUnapproveRequest, PrUpdateRequest,
+    PrCheckoutRequest, PrCommentRequest, PrCommentsRequest, PrCreateRequest, PrDeclineRequest,
+    PrDiffRequest, PrGetRequest, PrListRequest, PrMergeRequest, PrRemoveRequestChangesRequest,
+    PrRequest, PrRequestChangesRequest, PrStatusesRequest, PrUnapproveRequest, PrUpdateRequest,
     RepoListRequest, RepoRequest, Request, WikiGetRequest, WikiListRequest, WikiPutRequest,
     WikiRequest, WriteOutput,
 };
@@ -127,6 +127,7 @@ fn wants_json_errors(request: &Request) -> bool {
         Request::Pr(PrRequest::Diff(req)) => req.output.trim().eq_ignore_ascii_case("json"),
         Request::Pr(PrRequest::Statuses(req)) => req.output.trim().eq_ignore_ascii_case("json"),
         Request::Pr(PrRequest::Activity(req)) => req.output.trim().eq_ignore_ascii_case("json"),
+        Request::Pr(PrRequest::Checkout(req)) => req.output.trim().eq_ignore_ascii_case("json"),
         Request::Pipeline(PipelineRequest::List(req)) => {
             req.output.trim().eq_ignore_ascii_case("json")
         }
@@ -335,6 +336,7 @@ fn handle_pr<O: Write>(
         PrRequest::Diff(request) => handle_pr_diff(request, stdout),
         PrRequest::Statuses(request) => handle_pr_statuses(request, stdout),
         PrRequest::Activity(request) => handle_pr_activity(request, stdout),
+        PrRequest::Checkout(request) => handle_pr_checkout(request, stdout),
     }
 }
 
@@ -826,6 +828,104 @@ fn handle_pr_activity<O: Write>(
     }
 }
 
+fn handle_pr_checkout<O: Write>(
+    request: &PrCheckoutRequest,
+    stdout: &mut O,
+) -> Result<(), CliError> {
+    let output = parse_write_output(&request.output)?;
+    let (workspace, repo) =
+        context::resolve_repo_target(request.workspace.as_deref(), request.repo.as_deref(), true)?;
+    context::ensure_git_worktree(None)?;
+    let (local_workspace, local_repo) = context::infer_bitbucket_repo_from_git(None)?;
+    if !repo_target_matches(&local_workspace, &local_repo, &workspace, &repo) {
+        return Err(CliError::InvalidInput(
+            "bb pr checkout currently requires running inside the target repository".to_string(),
+        ));
+    }
+
+    let id = parse_numeric_id(request.id.as_deref(), "--id is required")?;
+    let client = client_from_profile(request.profile.as_deref())?;
+    let value = client.request_value(
+        Method::GET,
+        &format!("/repositories/{workspace}/{repo}/pullrequests/{id}"),
+        &[],
+        None,
+    )?;
+    let source_branch = render::string_field(&value, &["source", "branch", "name"])
+        .map(str::trim)
+        .filter(|value| !value.is_empty())
+        .ok_or_else(|| {
+            CliError::Internal("pull request is missing source.branch.name".to_string())
+        })?;
+    let source_repo = render::string_field(&value, &["source", "repository", "full_name"])
+        .map(str::trim)
+        .unwrap_or_default();
+    if !source_repo.is_empty() && !source_repo.eq_ignore_ascii_case(&format!("{workspace}/{repo}"))
+    {
+        return Err(CliError::InvalidInput(
+            "fork pull requests are not supported by bb pr checkout yet".to_string(),
+        ));
+    }
+
+    let branch = optional_trimmed(request.branch.as_deref())
+        .unwrap_or(source_branch)
+        .to_string();
+    context::validate_git_branch_name(None, &branch)?;
+
+    let hidden_ref = format!("refs/bb/pr/{id}");
+    let refspec = format!("+refs/heads/{source_branch}:{hidden_ref}");
+    context::run_git(None, ["fetch", "origin", refspec.as_str()])?;
+
+    let fetched_revision = context::resolve_git_revision(None, &hidden_ref)?
+        .ok_or_else(|| CliError::Git(format!("fetched ref not found after fetch: {hidden_ref}")))?;
+    let branch_ref = format!("refs/heads/{branch}");
+    let branch_revision = context::resolve_git_revision(None, &branch_ref)?;
+
+    let forced = match branch_revision {
+        None => {
+            context::run_git(
+                None,
+                ["checkout", "-b", branch.as_str(), hidden_ref.as_str()],
+            )?;
+            false
+        }
+        Some(branch_revision) if branch_revision == fetched_revision => {
+            context::run_git(None, ["checkout", branch.as_str()])?;
+            false
+        }
+        Some(_) if !request.force => {
+            return Err(CliError::Git(format!(
+                "local branch {branch} already exists and points to a different commit; rerun with --force"
+            )));
+        }
+        Some(_) => {
+            context::run_git(
+                None,
+                ["checkout", "-B", branch.as_str(), hidden_ref.as_str()],
+            )?;
+            true
+        }
+    };
+
+    match output {
+        WriteOutput::Text => {
+            writeln!(stdout, "Checked out PR #{id} to branch {branch}").map_err(CliError::from)
+        }
+        WriteOutput::Json => render::print_json(
+            stdout,
+            &json!({
+                "id": id.parse::<u64>().unwrap_or_default(),
+                "workspace": workspace,
+                "repo": repo,
+                "branch": branch,
+                "source_branch": source_branch,
+                "ref": hidden_ref,
+                "forced": forced,
+            }),
+        ),
+    }
+}
+
 fn fetch_values(
     client: &Client,
     path: &str,
@@ -890,6 +990,15 @@ fn write_pr_no_content_action<O: Write>(
             }),
         ),
     }
+}
+
+fn repo_target_matches(
+    local_workspace: &str,
+    local_repo: &str,
+    workspace: &str,
+    repo: &str,
+) -> bool {
+    local_workspace.eq_ignore_ascii_case(workspace) && local_repo.eq_ignore_ascii_case(repo)
 }
 
 fn handle_pipeline<O: Write>(request: &PipelineRequest, stdout: &mut O) -> Result<(), CliError> {

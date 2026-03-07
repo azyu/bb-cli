@@ -21,4 +21,4 @@
 ## Current Phase
 - Phase: complete
 - Owner: agent
-- Notes: Phase 1 Rust migration is complete. The Rust 2-crate workspace (`bb-cli`, `bb-core`) is now the only implementation, CI/release workflows target Cargo, and the legacy Go source tree has been removed. The PR surface has been expanded with Bitbucket Cloud API-aligned command names (`get`, `update`, `request-changes`, `remove-request-changes`, etc.) while keeping the repo Cloud-only and the architecture unchanged. Local Git helpers such as `bb pr checkout` remain explicit follow-up work.
+- Notes: Phase 1 Rust migration is complete. The Rust 2-crate workspace (`bb-cli`, `bb-core`) is now the only implementation, CI/release workflows target Cargo, and the legacy Go source tree has been removed. The PR surface has been expanded with Bitbucket Cloud API-aligned command names (`get`, `update`, `request-changes`, `remove-request-changes`, etc.) plus a same-repository `bb pr checkout` local Git helper while keeping the repo Cloud-only and the architecture unchanged. Fork-aware checkout and richer local Git UX remain explicit follow-up work.

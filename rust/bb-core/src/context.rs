@@ -257,6 +257,51 @@ where
     result
 }
 
+pub fn ensure_git_worktree(dir: Option<&Path>) -> Result<(), CliError> {
+    let output = run_git(dir, ["rev-parse", "--is-inside-work-tree"])?;
+    if output.trim() == "true" {
+        Ok(())
+    } else {
+        Err(CliError::Git(
+            "current directory is not a git worktree".to_string(),
+        ))
+    }
+}
+
+pub fn validate_git_branch_name(dir: Option<&Path>, branch: &str) -> Result<(), CliError> {
+    let trimmed = branch.trim();
+    if trimmed.is_empty() {
+        return Err(CliError::InvalidInput("--branch is required".to_string()));
+    }
+    run_git(dir, ["check-ref-format", "--branch", trimmed]).map(|_| ())
+}
+
+pub fn resolve_git_revision(
+    dir: Option<&Path>,
+    revision: &str,
+) -> Result<Option<String>, CliError> {
+    let mut command = Command::new("git");
+    command.arg("-c").arg("credential.helper=");
+    command.args(["rev-parse", "--verify", "--quiet", revision]);
+    if let Some(dir) = dir {
+        command.current_dir(dir);
+    }
+
+    let output = command
+        .output()
+        .map_err(|error| CliError::Git(error.to_string()))?;
+    if !output.status.success() {
+        return Ok(None);
+    }
+
+    let revision = String::from_utf8_lossy(&output.stdout).trim().to_string();
+    if revision.is_empty() {
+        Ok(None)
+    } else {
+        Ok(Some(revision))
+    }
+}
+
 fn shell_escape_single_quote(value: &str) -> String {
     value.replace('\'', "'\\''")
 }

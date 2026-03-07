@@ -12,7 +12,7 @@ Implemented commands:
 - `bb auth <login|status|logout>`
 - `bb api`
 - `bb repo <list>`
-- `bb pr <list|create|merge|get|update|approve|unapprove|request-changes|remove-request-changes|decline|comment|comments|diff|statuses|activity>`
+- `bb pr <list|create|merge|get|update|approve|unapprove|request-changes|remove-request-changes|decline|comment|comments|diff|statuses|activity|checkout>`
 - `bb pipeline <list|run>`
 - `bb wiki <list|get|put>`
 - `bb issue <list|create|update>`
@@ -94,7 +94,7 @@ If developers need to create/update PRs or trigger pipelines, add:
 | Command / use case | Recommended scopes |
 | --- | --- |
 | `bb repo list` (repo read) | `read:repository:bitbucket` |
-| `bb pr list/get/comments/diff/statuses/activity` (PR read) | `read:repository:bitbucket`, `read:pullrequest:bitbucket` |
+| `bb pr list/get/comments/diff/statuses/activity/checkout` (PR read) | `read:repository:bitbucket`, `read:pullrequest:bitbucket` |
 | `bb pr create/update/merge/approve/unapprove/request-changes/remove-request-changes/decline/comment` (PR write) | `read:repository:bitbucket`, `read:pullrequest:bitbucket`, `write:pullrequest:bitbucket` |
 | `bb pipeline list` (pipeline read) | `read:repository:bitbucket`, `read:pipeline:bitbucket` |
 | `bb pipeline run` (pipeline write) | `read:repository:bitbucket`, `read:pipeline:bitbucket`, `write:pipeline:bitbucket` |
@@ -195,7 +195,10 @@ bb pr diff --id 42
 bb pr comments --id 42
 bb pr statuses --id 42 --output json
 bb pr activity --id 42
+bb pr checkout --id 42
+bb pr checkout --id 42 --force
 ```
+Run `bb pr checkout` inside the target repository. v1 supports same-repository pull requests only.
 
 10. Update or review-state a PR (write scope required):
 ```bash
@@ -222,7 +225,7 @@ bb pipeline run --workspace <workspace-slug> --repo <repo-slug> --branch main
 ```bash
 bb completion zsh
 # bash/zsh/fish/powershell supported; includes 2-level subcommand completion
-# e.g. `bb pr<TAB>` -> list, create, merge, get, update, approve, ...
+# e.g. `bb pr<TAB>` -> list, create, merge, get, update, approve, ..., checkout
 ```
 
 14. List issues:

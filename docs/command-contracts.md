@@ -371,6 +371,28 @@ Naming rule:
   - Non-numeric `--id` value -> non-zero exit
   - Unsupported output -> non-zero exit
 
+### `bb pr checkout`
+- Purpose: Check out the source branch of a same-repository pull request into the current local repository.
+- Required flags:
+  - `--id`
+  - `--workspace`, `--repo` unless both can be inferred from local Bitbucket `remote.origin.url`
+  - current directory must be a Git worktree for the target repository
+- Optional flags:
+  - `--branch` (override local branch name; default: PR source branch name)
+  - `--force` (replace an existing local branch when it points to a different commit)
+  - `--profile`
+  - `--output` (`text` default, `json`)
+- Output:
+  - `text`: checkout confirmation (`Checked out PR #<id> to branch <branch>`)
+  - `json`: object with `id`, `workspace`, `repo`, `branch`, `source_branch`, `ref`, `forced`
+- Failure behavior:
+  - Missing required flags -> non-zero exit
+  - Non-numeric `--id` value -> non-zero exit
+  - Current directory is not the target Git repository -> non-zero exit
+  - Fork pull requests are not supported in v1 -> non-zero exit
+  - Existing local branch points to a different commit without `--force` -> non-zero exit
+  - Unsupported output -> non-zero exit
+
 ## `bb pipeline`
 
 ### `bb pipeline list`

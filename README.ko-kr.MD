@@ -12,7 +12,7 @@
 - `bb auth <login|status|logout>`
 - `bb api`
 - `bb repo <list>`
-- `bb pr <list|create|merge|get|update|approve|unapprove|request-changes|remove-request-changes|decline|comment|comments|diff|statuses|activity>`
+- `bb pr <list|create|merge|get|update|approve|unapprove|request-changes|remove-request-changes|decline|comment|comments|diff|statuses|activity|checkout>`
 - `bb pipeline <list|run>`
 - `bb wiki <list|get|put>`
 - `bb issue <list|create|update>`
@@ -94,7 +94,7 @@ PR 생성/수정 또는 Pipeline 실행이 필요하면 추가:
 | 명령/사용 목적 | 권장 scope |
 | --- | --- |
 | `bb repo list` (저장소 조회) | `read:repository:bitbucket` |
-| `bb pr list/get/comments/diff/statuses/activity` (PR 조회) | `read:repository:bitbucket`, `read:pullrequest:bitbucket` |
+| `bb pr list/get/comments/diff/statuses/activity/checkout` (PR 조회) | `read:repository:bitbucket`, `read:pullrequest:bitbucket` |
 | `bb pr create/update/merge/approve/unapprove/request-changes/remove-request-changes/decline/comment` (PR 쓰기) | `read:repository:bitbucket`, `read:pullrequest:bitbucket`, `write:pullrequest:bitbucket` |
 | `bb pipeline list` (Pipeline 조회) | `read:repository:bitbucket`, `read:pipeline:bitbucket` |
 | `bb pipeline run` (Pipeline 실행/수정) | `read:repository:bitbucket`, `read:pipeline:bitbucket`, `write:pipeline:bitbucket` |
@@ -195,7 +195,10 @@ bb pr diff --id 42
 bb pr comments --id 42
 bb pr statuses --id 42 --output json
 bb pr activity --id 42
+bb pr checkout --id 42
+bb pr checkout --id 42 --force
 ```
+`bb pr checkout`은 대상 저장소 디렉토리 안에서 실행해야 하며, v1에서는 같은 저장소의 PR만 지원합니다.
 
 10. PR 상태 변경/수정 (쓰기 scope 필요):
 ```bash
@@ -222,7 +225,7 @@ bb pipeline run --workspace <workspace-slug> --repo <repo-slug> --branch main
 ```bash
 bb completion zsh
 # bash/zsh/fish/powershell 지원; 2단계 서브커맨드 자동완성 포함
-# 예: `bb pr<TAB>` -> list, create, merge, get, update, approve, ...
+# 예: `bb pr<TAB>` -> list, create, merge, get, update, approve, ..., checkout
 ```
 
 14. 이슈 목록 조회:

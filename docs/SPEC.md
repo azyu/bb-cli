@@ -53,6 +53,7 @@
 - `bb pr diff`
 - `bb pr statuses`
 - `bb pr activity`
+- `bb pr checkout`
 - `bb pipeline list`
 - `bb pipeline run`
 - `bb issue list`
@@ -66,7 +67,7 @@
 - `bb --version`
 
 Still out of scope:
-- local Git checkout helpers such as `bb pr checkout`
+- fork-aware `bb pr checkout` flows and extra local Git checkout UX such as `--detach`
 - extra PR wrappers not backed by a clear Bitbucket Cloud REST operation title
 
 ## Config and Auth
@@ -104,6 +105,13 @@ Still out of scope:
 - Explicit flags always win over inferred values.
 - Non-Bitbucket remotes must not infer values.
 
+## PR Checkout Rules
+- `bb pr checkout` must run inside a Git worktree for the target repository.
+- `bb pr checkout` uses the current repository's `origin` remote for `git fetch`.
+- v1 supports only same-repository pull requests; fork pull requests remain out of scope.
+- The default local branch name is the PR source branch name; `--branch` overrides the local branch name only.
+- If the local branch already exists at a different commit, the command must fail unless `--force` is set.
+
 ## Output and Errors
 - Success data goes to stdout.
 - Text-mode errors go to stderr with non-zero exit status.
@@ -113,9 +121,9 @@ Still out of scope:
   - list commands: `table|json`
   - write/detail commands: `text|json`
   - wiki get: `text|json`
-  - `bb api`: JSON only
+- `bb api`: JSON only
 - PR-specific conventions:
-  - `bb pr get`, `bb pr update`, `bb pr approve`, `bb pr unapprove`, `bb pr request-changes`, `bb pr remove-request-changes`, `bb pr decline`, `bb pr comment`: `text|json`
+  - `bb pr get`, `bb pr update`, `bb pr approve`, `bb pr unapprove`, `bb pr request-changes`, `bb pr remove-request-changes`, `bb pr decline`, `bb pr comment`, `bb pr checkout`: `text|json`
   - `bb pr comments`, `bb pr statuses`, `bb pr activity`: `table|json`
   - `bb pr diff`: `text|json`, where JSON wraps the raw diff payload in an object
 - `bb pr list` text output keeps:

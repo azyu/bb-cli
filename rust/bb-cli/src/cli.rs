@@ -3,9 +3,9 @@ use std::ffi::OsString;
 use bb_core::{
     ApiRequest, AuthLoginRequest, AuthLogoutRequest, AuthRequest, AuthStatusRequest,
     IssueCreateRequest, IssueListRequest, IssueRequest, IssueUpdateRequest, PipelineListRequest,
-    PipelineRequest, PipelineRunRequest, PrActivityRequest, PrApproveRequest, PrCommentRequest,
-    PrCommentsRequest, PrCreateRequest, PrDeclineRequest, PrDiffRequest, PrGetRequest,
-    PrListRequest, PrMergeRequest, PrRemoveRequestChangesRequest, PrRequest,
+    PipelineRequest, PipelineRunRequest, PrActivityRequest, PrApproveRequest, PrCheckoutRequest,
+    PrCommentRequest, PrCommentsRequest, PrCreateRequest, PrDeclineRequest, PrDiffRequest,
+    PrGetRequest, PrListRequest, PrMergeRequest, PrRemoveRequestChangesRequest, PrRequest,
     PrRequestChangesRequest, PrStatusesRequest, PrUnapproveRequest, PrUpdateRequest,
     RepoListRequest, RepoRequest, Request, WikiGetRequest, WikiListRequest, WikiPutRequest,
     WikiRequest,
@@ -88,6 +88,7 @@ pub enum PrCommands {
     Diff(PrDiffArgs),
     Statuses(PrStatusesArgs),
     Activity(PrActivityArgs),
+    Checkout(PrCheckoutArgs),
 }
 
 #[derive(Debug, Subcommand)]
@@ -442,6 +443,24 @@ pub struct PrActivityArgs {
     pub sort: Option<String>,
     #[arg(long)]
     pub fields: Option<String>,
+}
+
+#[derive(Debug, Args)]
+pub struct PrCheckoutArgs {
+    #[arg(long)]
+    pub workspace: Option<String>,
+    #[arg(long)]
+    pub repo: Option<String>,
+    #[arg(long)]
+    pub id: Option<String>,
+    #[arg(long)]
+    pub branch: Option<String>,
+    #[arg(long)]
+    pub force: bool,
+    #[arg(long)]
+    pub profile: Option<String>,
+    #[arg(long, default_value = "text")]
+    pub output: String,
 }
 
 #[derive(Debug, Args)]
@@ -812,6 +831,15 @@ fn map_request(cli: Cli) -> Request {
                 sort: args.sort,
                 fields: args.fields,
             }),
+            Some(PrCommands::Checkout(args)) => PrRequest::Checkout(PrCheckoutRequest {
+                workspace: args.workspace,
+                repo: args.repo,
+                id: args.id,
+                branch: args.branch,
+                force: args.force,
+                profile: args.profile,
+                output: args.output,
+            }),
         }),
         Some(Commands::Pipeline { command }) => Request::Pipeline(match command {
             None => PipelineRequest::Help,
@@ -964,6 +992,30 @@ mod tests {
         };
         assert_eq!(request.id.as_deref(), Some("42"));
         assert_eq!(request.content.as_deref(), Some("needs changes"));
+        assert_eq!(request.output, "json");
+    }
+
+    #[test]
+    fn pr_checkout_maps_branch_force_and_output() {
+        let request = parse_from([
+            "bb",
+            "pr",
+            "checkout",
+            "--id",
+            "42",
+            "--branch",
+            "feature/local",
+            "--force",
+            "--output",
+            "json",
+        ])
+        .expect("parse should succeed");
+        let Request::Pr(PrRequest::Checkout(request)) = request else {
+            panic!("expected pr checkout");
+        };
+        assert_eq!(request.id.as_deref(), Some("42"));
+        assert_eq!(request.branch.as_deref(), Some("feature/local"));
+        assert!(request.force);
         assert_eq!(request.output, "json");
     }
 }
