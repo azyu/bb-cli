@@ -1,0 +1,19 @@
+[package]
+name = "bb-cli"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[[bin]]
+name = "bb"
+path = "src/main.rs"
+
+[dependencies]
+bb-core = { path = "../bb-core" }
+clap.workspace = true
+
+[dev-dependencies]
+assert_cmd.workspace = true
+httpmock.workspace = true
+serde_json.workspace = true
+tempfile.workspace = true
