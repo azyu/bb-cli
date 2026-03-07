@@ -154,4 +154,5 @@ Out of phase 1 scope:
   - `windows_arm64` as `.zip`
 - Release workflow also uploads `checksums.txt` covering all published archives.
 - Release workflow auto-publishes the GitHub Release after assets upload, even if the tag already had a draft release.
+- If `HOMEBREW_TAP_TOKEN` is configured, release workflow also updates the `azyu/homebrew-tap` formula to the released version and checksums.
 - Go build/test/release paths are removed after Rust verification passes.
