@@ -28,3 +28,4 @@
 - [x] Broaden smoke coverage for `pipeline`, `issue`, and `wiki` command flows - owner: agent
 - [x] Implement phase 2 agent-first extensions (`--describe`, `--dry-run`) - owner: agent
 - [ ] Harden agent-specific invalid input handling (control characters, embedded query fragments, double-encoded identifiers) - owner: agent
+- [x] Tighten `AGENTS.md` DoD and logical-commit completion workflow guidance - owner: agent

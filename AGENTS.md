@@ -163,10 +163,11 @@ A task is done only when all of the following are true:
 - Relevant verification commands have been run at the smallest meaningful scope and passed, or any skipped checks are called out explicitly.
 - The final diff is reviewable and free of unrelated edits.
 - The final change set is ready to land through the Git/PR flow below.
+- The DoD checklist is the gate before final commit/PR work begins; do not treat a task as complete while it only exists as an uncommitted local diff.
 
 After the DoD checklist is satisfied, do not treat the task as closed until all of the following are complete:
 1. Put the final change set on a branch based on the latest `main`.
-2. Split the work into logical commits.
+2. Split the work into logical commits that match reviewable steps in the implementation.
 3. Push that branch to `origin`.
 4. Open a PR with the summary, verification commands, assumptions, and unresolved questions.
 
@@ -184,14 +185,23 @@ Rules:
 
 - Keep each change set focused on one goal.
 - Use a branch based on the latest `main` for the final reviewable change set.
+- Once the DoD checklist is satisfied, create the final commit sequence immediately; do not leave completed work uncommitted.
 - Split non-trivial work into logical commits instead of one large checkpoint commit.
+- A logical commit should represent one reviewable step, for example docs, parser/runtime behavior, or tests.
+- If the work naturally breaks into multiple implementation stages, commit those stages in order after verification so the branch history explains how the change was built.
+- Do not mix unrelated cleanup into the same commit.
 - Push the review branch and open a PR once the DoD checklist is satisfied.
 - Include verification commands actually run.
 - If a command could not be run, state that explicitly.
 - Document assumptions and unresolved questions in the PR description.
-- When work is completed normally, create a commit for the finished scope.
+- When work is completed normally, create one or more commits for the finished scope before handing off.
 - Before committing, ensure `.context/STEERING.md` and `.context/TASKS.md` reflect final status.
 - Suggested commit flow:
+  1. Group the finished diff into logical review units.
+  2. `git add` only the files for the first logical unit.
+  3. `git commit` with a focused message.
+  4. Repeat until the completed work is fully represented by logical commits.
+  5. Push the branch and open the PR.
   ```bash
   git add AGENTS.md .context/STEERING.md .context/TASKS.md
   git commit -m "docs: define multi-agent plan/task workflow"
