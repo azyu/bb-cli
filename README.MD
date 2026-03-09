@@ -1,7 +1,7 @@
 # bb
 
-[![CI](https://github.com/azyu/bb/actions/workflows/ci.yml/badge.svg)](https://github.com/azyu/bb/actions/workflows/ci.yml)
-[![Release](https://img.shields.io/github/v/release/azyu/bb)](https://github.com/azyu/bb/releases/latest)
+[![CI](https://github.com/azyu/bb-cli/actions/workflows/ci.yml/badge.svg)](https://github.com/azyu/bb-cli/actions/workflows/ci.yml)
+[![Release](https://img.shields.io/github/v/release/azyu/bb-cli)](https://github.com/azyu/bb-cli/releases/latest)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
 [English](README.md) | [한국어](README.ko-kr.MD)
@@ -28,7 +28,7 @@ brew install azyu/tap/bb
 
 ### Prebuilt binary
 
-Download from [GitHub Releases](https://github.com/azyu/bb/releases/latest).
+Download from [GitHub Releases](https://github.com/azyu/bb-cli/releases/latest).
 
 | Platform | Asset |
 |----------|-------|
