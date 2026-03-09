@@ -1,81 +1,135 @@
-# Bitbucket CLI (Cloud MVP)
+# bb
 
-영문 문서: `README.MD`
+[![CI](https://github.com/azyu/bb/actions/workflows/ci.yml/badge.svg)](https://github.com/azyu/bb/actions/workflows/ci.yml)
+[![Release](https://img.shields.io/github/v/release/azyu/bb)](https://github.com/azyu/bb/releases/latest)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
-## 개요
-`bb`는 `gh` 스타일 명령 구성을 참고한 Rust 기반 Bitbucket Cloud CLI입니다.
+[English](README.md) | [한국어](README.ko-kr.MD)
 
-기술 스펙과 현재 구현 계약 문서:
-- `docs/SPEC.md`
+> `gh`에서 영감을 받은, 빠르고 에이전트 친화적인 Bitbucket Cloud CLI. Rust로 작성.
 
-현재 구현된 명령:
-- `bb auth <login|status|logout>`
-- `bb api`
-- `bb repo <list>`
-- `bb pr <list|create|merge|get|update|approve|unapprove|request-changes|remove-request-changes|decline|comment|comments|diff|statuses|activity>`
-- `bb pipeline <list|run>`
-- `bb wiki <list|get|put>`
-- `bb issue <list|create|update>`
-- `bb completion <bash|zsh|fish|powershell>`
-- `bb version` / `bb --version`
+## 특징
 
-PR 래퍼 명령 이름은 Bitbucket Cloud REST operation 제목과 직접 맞춥니다:
-- `view` / `edit` 대신 `get` / `update`
-- 로컬 별칭 대신 `request-changes` / `remove-request-changes`
-
-모든 명령은 `--help` / `-h`로 상세 사용법을 확인할 수 있습니다 (`--flag` 형식):
-```bash
-bb pr --help          # 그룹: 서브커맨드 목록 표시
-bb pr create --help   # 리프: 플래그와 설명 표시
-```
+- **`gh` 스타일 명령 구조** — 익숙한 verb-noun 패턴
+- **Git remote 자동 추론** — `remote.origin.url`에서 workspace/repo 자동 감지
+- **에이전트 퍼스트 설계** — 구조화된 JSON 출력과 에러 엔벨로프
+- **다중 출력 형식** — `table`, `json`, `text`
+- **셸 자동완성** — bash / zsh / fish / powershell, 2단계 서브커맨드 지원
+- **크로스 플랫폼 바이너리** — Linux (amd64/arm64), macOS (arm64), Windows (x64/arm64)
+- **Raw API 이스케이프 해치** — `bb api`로 모든 Bitbucket Cloud 엔드포인트 호출
 
 ## 설치
 
+### Homebrew
+
+```bash
+brew install azyu/tap/bb
+```
+
+### 미리 빌드된 바이너리
+
+[GitHub Releases](https://github.com/azyu/bb/releases/latest)에서 다운로드.
+
+| 플랫폼 | 에셋 |
+|--------|------|
+| Linux amd64 | `bb_linux_amd64.tar.gz` |
+| Linux arm64 | `bb_linux_arm64.tar.gz` |
+| macOS arm64 | `bb_macos_arm64.tar.gz` |
+| Windows x64 | `bb_windows_x64.zip` |
+| Windows arm64 | `bb_windows_arm64.zip` |
+
 ### 소스에서 빌드
-Rust `1.93+` 필요.
 
-## 빌드
+Rust 1.93+ 필요.
+
 ```bash
-make build        # -> rust/target/debug/bb
-make install      # -> ~/.local/bin/bb
-make test         # 전체 테스트 실행
-make lint         # cargo check --all-targets
-make fmt          # cargo fmt --all
-make help         # 모든 타겟 표시
+make install   # 릴리스 바이너리 빌드 → ~/.local/bin/bb
 ```
 
-또는 수동 빌드:
+## 빠른 시작
+
+### 1. 인증
+
 ```bash
-BB_BUILD_COMMIT=$(git rev-parse --short HEAD) BB_BUILD_DATE=$(date -u +"%Y-%m-%dT%H:%M:%SZ") \
-  cargo build --manifest-path rust/Cargo.toml -p bb-cli --bin bb --release
+bb auth login --username "<bitbucket-email>" --token "<your-token>"
 ```
 
-## Bitbucket API Token 발급 방법
-이 CLI는 인증에 Bitbucket 토큰을 사용합니다.
+> [!TIP]
+> stdin으로 토큰을 전달하거나 환경변수를 설정할 수도 있습니다:
+> ```bash
+> echo "<token>" | bb auth login --username "<email>" --with-token
+> BITBUCKET_USERNAME="<email>" BITBUCKET_TOKEN="<token>" bb auth login
+> ```
 
-인증 모드:
-- API token(개인 토큰): Basic 인증(`username/email + token`) 사용
-- Access token 계열: Bearer 토큰 모드(사용자명 없이 토큰만)
-- Wiki Git 인증 사용자 매핑:
-  - Personal API token 프로파일(이메일 username) -> `x-bitbucket-api-token-auth`
-  - Access-token 계열 프로파일(username 비움) -> `x-token-auth`
+### 2. 확인
 
-Bitbucket Cloud 기준 단계:
-1. Bitbucket Cloud에서 Personal settings로 이동합니다.
-2. `API tokens` 메뉴를 엽니다.
-3. `Create API token`을 클릭합니다.
-4. 토큰 이름을 입력하고 필요한 권한(scope)을 선택합니다.
-5. 생성 직후 표시되는 토큰 값을 복사합니다.
+```bash
+bb auth status
+```
 
-공식 문서:
-- https://support.atlassian.com/bitbucket-cloud/docs/create-an-api-token/
-- https://support.atlassian.com/bitbucket-cloud/docs/api-token-permissions/
+### 3. 사용
 
-## 권장 Token Scope
-최소 권한 원칙으로 시작하고, 필요한 기능에 맞춰 scope를 추가하세요.
+Bitbucket 저장소 디렉토리 안에서는 workspace/repo 플래그가 자동 추론됩니다:
 
-### 일반 개발자 용도 권장 세트
-기본 프로파일(안전한 읽기 중심):
+```bash
+bb pr list
+bb pr create --title "My PR" --source feature --destination main
+bb repo list
+bb pipeline list
+```
+
+### 4. 셸 자동완성 활성화
+
+```bash
+bb completion zsh   # bash / zsh / fish / powershell
+```
+
+## 명령어
+
+| 그룹 | 서브커맨드 | 인증 scope |
+|------|-----------|-----------|
+| `bb auth` | `login`, `status`, `logout` | — |
+| `bb repo` | `list` | `read:repository` |
+| `bb pr` | `list`, `get`, `create`, `update`, `merge`, `approve`, `unapprove`, `request-changes`, `remove-request-changes`, `decline`, `comment`, `comments`, `diff`, `statuses`, `activity` | `read/write:pullrequest` |
+| `bb pipeline` | `list`, `run` | `read/write:pipeline` |
+| `bb wiki` | `list`, `get`, `put` | `read/write:wiki` |
+| `bb issue` | `list`, `create`, `update` | `read/write:issue` |
+| `bb api` | *(raw endpoint)* | 상황에 따라 다름 |
+| `bb completion` | `bash`, `zsh`, `fish`, `powershell` | — |
+
+> [!NOTE]
+> PR 서브커맨드 이름은 Bitbucket Cloud REST operation 제목을 따릅니다:
+> `view`/`edit` 대신 `get`/`update`, 로컬 별칭 대신 `request-changes`/`remove-request-changes`.
+
+`bb <command> --help`로 상세 플래그 설명을 확인하세요.
+
+## 설정
+
+설정 파일 경로 우선순위:
+
+1. `BB_CONFIG_PATH` (명시적 override)
+2. `$XDG_CONFIG_HOME/bb/config.json`
+3. `~/.config/bb/config.json` (기본값)
+
+> [!CAUTION]
+> 토큰은 설정 파일에 **평문으로 저장**됩니다 (MVP 단계). 파일 권한을 적절히 관리하세요.
+
+## 인증
+
+두 가지 인증 모드를 지원합니다:
+
+| 모드 | 스킴 | 사용자명 필요 |
+|------|------|-------------|
+| Personal API 토큰 | Basic (`username:token`) | 예 |
+| Access 토큰 | Bearer | 아니오 |
+
+토큰 생성은 [Atlassian 공식 문서](https://support.atlassian.com/bitbucket-cloud/docs/create-an-api-token/)를 참고하세요.
+Scope 참조는 [API 토큰 권한](https://support.atlassian.com/bitbucket-cloud/docs/api-token-permissions/)을 참고하세요.
+
+## Token Scope
+
+권장 기본 세트 (읽기 전용):
+
 - `read:repository:bitbucket`
 - `read:pullrequest:bitbucket`
 - `read:pipeline:bitbucket`
@@ -84,193 +138,38 @@ Bitbucket Cloud 기준 단계:
 - `read:user:bitbucket`
 - `read:workspace:bitbucket`
 
-PR 생성/수정 또는 Pipeline 실행이 필요하면 추가:
-- `write:pullrequest:bitbucket`
-- `write:pipeline:bitbucket`
-- `write:issue:bitbucket`
-- `write:wiki:bitbucket`
+변경 명령이 필요하면 `write:*` scope를 추가하세요.
 
-### CLI Scope 매트릭스
-| 명령/사용 목적 | 권장 scope |
-| --- | --- |
-| `bb repo list` (저장소 조회) | `read:repository:bitbucket` |
-| `bb pr list/get/comments/diff/statuses/activity` (PR 조회) | `read:repository:bitbucket`, `read:pullrequest:bitbucket` |
-| `bb pr create/update/merge/approve/unapprove/request-changes/remove-request-changes/decline/comment` (PR 쓰기) | `read:repository:bitbucket`, `read:pullrequest:bitbucket`, `write:pullrequest:bitbucket` |
-| `bb pipeline list` (Pipeline 조회) | `read:repository:bitbucket`, `read:pipeline:bitbucket` |
-| `bb pipeline run` (Pipeline 실행/수정) | `read:repository:bitbucket`, `read:pipeline:bitbucket`, `write:pipeline:bitbucket` |
-| `bb wiki list/get` (Wiki 조회) | `read:repository:bitbucket`, `read:wiki:bitbucket` |
-| `bb wiki put` (Wiki 수정) | `read:repository:bitbucket`, `read:wiki:bitbucket`, `write:wiki:bitbucket` |
-| `bb issue list` (이슈 조회) | `read:repository:bitbucket`, `read:issue:bitbucket` |
-| `bb issue create/update` (이슈 생성/수정) | `read:repository:bitbucket`, `read:issue:bitbucket`, `write:issue:bitbucket` |
-| `bb api` (user/workspace 엔드포인트) | `read:user:bitbucket`, `read:workspace:bitbucket` |
-| `bb completion`, `bb version` | 추가 scope 불필요 |
+<details>
+<summary>전체 CLI scope 매트릭스</summary>
 
-### 기본적으로 피할 권한
-- `admin:*`
-- `delete:*`
-- 명시적 필요가 없는 `write:permission:bitbucket`
+| 명령 | 필요 scope |
+|------|-----------|
+| `bb repo list` | `read:repository` |
+| `bb pr list/get/comments/diff/statuses/activity` | `read:repository`, `read:pullrequest` |
+| `bb pr create/update/merge/approve/…/comment` | `read:repository`, `read:pullrequest`, `write:pullrequest` |
+| `bb pipeline list` | `read:repository`, `read:pipeline` |
+| `bb pipeline run` | `read:repository`, `read:pipeline`, `write:pipeline` |
+| `bb wiki list/get` | `read:repository`, `read:wiki` |
+| `bb wiki put` | `read:repository`, `read:wiki`, `write:wiki` |
+| `bb issue list` | `read:repository`, `read:issue` |
+| `bb issue create/update` | `read:repository`, `read:issue`, `write:issue` |
+| `bb api` | `read:user`, `read:workspace` (상황에 따라 다름) |
+| `bb completion`, `bb version` | — |
 
-## 빠른 시작
-1. 토큰으로 로그인:
-```bash
-bb auth login --username "<bitbucket-email>" --token "<your-token>" --profile default
-```
+**기본적으로 피할 권한:** `admin:*`, `delete:*`, `write:permission:bitbucket`
 
-대안 (stdin):
-```bash
-echo "<your-token>" | bb auth login --username "<bitbucket-email>" --with-token --profile default
-```
-
-대안 (환경변수):
-```bash
-BITBUCKET_USERNAME="<bitbucket-email>" BITBUCKET_TOKEN="<your-token>" bb auth login --profile default
-```
-
-2. 인증 상태 확인:
-```bash
-bb auth status
-```
-
-선택: 현재 프로파일(또는 특정 프로파일) 로그아웃:
-```bash
-bb auth logout
-bb auth logout --profile <profile-name>
-```
-
-3. 버전 확인:
-```bash
-bb version
-```
-
-4. 저장소 목록 조회:
-```bash
-bb repo list --workspace <workspace-slug>
-```
-Bitbucket 저장소 디렉토리에서 실행하면 `bb repo list`는 `remote.origin.url`에서 `<workspace>`를 자동 추론할 수 있습니다.
-
-5. API 직접 호출:
-```bash
-bb api /repositories/<workspace-slug>
-bb api --paginate /repositories/<workspace-slug>
-```
-
-6. PR 목록 조회:
-```bash
-bb pr list --workspace <workspace-slug> --repo <repo-slug>
-```
-`table` 출력은 `gh pr list`와 유사한 형태(요약 라인 + `ID/TITLE/BRANCH/CREATED AT`)로 표시됩니다.
-터미널 출력에서는 ANSI 색상이 적용되며 `BB_COLOR=always|never` 또는 `NO_COLOR=1`로 제어할 수 있습니다.
-Bitbucket 저장소 디렉토리에서 실행하면 repo 대상 명령은 `remote.origin.url`에서 `<workspace>/<repo>`를 자동 추론할 수 있습니다:
-```bash
-bb pr list
-bb pr create --title "My PR" --source feature --destination main
-bb pr merge --id 42 --strategy squash
-bb pipeline list
-bb pipeline run --branch main
-bb issue list
-bb issue create --title "My issue" --content "details"
-bb issue update --id 1 --state resolved
-bb wiki list
-bb wiki get --page Home.md
-bb wiki put --page Home.md --content "# Updated"
-```
-
-7. PR 생성 (쓰기 scope 필요):
-```bash
-bb pr create --workspace <workspace-slug> --repo <repo-slug> --title "My PR" --source feature --destination main
-bb pr create --title "My PR" --source feature --destination main --close-branch
-```
-
-8. PR 머지 (쓰기 scope 필요):
-```bash
-bb pr merge --workspace <workspace-slug> --repo <repo-slug> --id 42
-bb pr merge --id 42 --strategy squash --close-branch
-bb pr merge --id 42 --message "Ship it" --strategy merge_commit
-```
-
-9. 기존 PR 조회/리뷰:
-```bash
-bb pr get --id 42
-bb pr diff --id 42
-bb pr comments --id 42
-bb pr statuses --id 42 --output json
-bb pr activity --id 42
-```
-
-10. PR 상태 변경/수정 (쓰기 scope 필요):
-```bash
-bb pr update --id 42 --title "Retitle PR" --description "Updated summary"
-bb pr approve --id 42
-bb pr unapprove --id 42
-bb pr request-changes --id 42
-bb pr remove-request-changes --id 42
-bb pr decline --id 42
-bb pr comment --id 42 --content "Please rename this function."
-```
-
-11. Pipeline 목록 조회:
-```bash
-bb pipeline list --workspace <workspace-slug> --repo <repo-slug>
-```
-
-12. Pipeline 실행 (쓰기 scope 필요):
-```bash
-bb pipeline run --workspace <workspace-slug> --repo <repo-slug> --branch main
-```
-
-13. 셸 자동완성 스크립트 생성 (서브커맨드 자동완성 지원):
-```bash
-bb completion zsh
-# bash/zsh/fish/powershell 지원; 2단계 서브커맨드 자동완성 포함
-# 예: `bb pr<TAB>` -> list, create, merge, get, update, approve, ...
-```
-
-14. 이슈 목록 조회:
-```bash
-bb issue list --workspace <workspace-slug> --repo <repo-slug>
-```
-
-15. 이슈 생성 (쓰기 scope 필요):
-```bash
-bb issue create --workspace <workspace-slug> --repo <repo-slug> --title "My issue" --content "details"
-```
-
-16. 이슈 수정 (쓰기 scope 필요):
-```bash
-bb issue update --workspace <workspace-slug> --repo <repo-slug> --id 1 --state resolved
-```
-
-17. Wiki 파일 목록 조회:
-```bash
-bb wiki list --workspace <workspace-slug> --repo <repo-slug>
-```
-
-18. Wiki 페이지 읽기:
-```bash
-bb wiki get --workspace <workspace-slug> --repo <repo-slug> --page Home.md
-```
-
-19. Wiki 페이지 수정 (쓰기 scope 필요):
-```bash
-bb wiki put --workspace <workspace-slug> --repo <repo-slug> --page Home.md --content "# Updated"
-```
-
-## 설정 파일 위치
-우선순위:
-1. `BB_CONFIG_PATH` (명시적 override)
-2. `$XDG_CONFIG_HOME/bb/config.json` (`XDG_CONFIG_HOME` 설정 시)
-3. `~/.config/bb/config.json` (기본값)
-
-보안 참고:
-- 현재 토큰은 설정 파일에 평문으로 저장됩니다(MVP 단계).
-- 설정 디렉터리는 해석된 XDG 경로 아래에 필요 시 생성됩니다.
+</details>
 
 ## 개발
+
 ```bash
-make test
-make lint
-make fmt
+make build    # 디버그 빌드
+make install  # 릴리스 빌드 → ~/.local/bin/bb
+make test     # 전체 테스트 실행
+make lint     # cargo check --all-targets
+make fmt      # cargo fmt --all
+make help     # 모든 타겟 표시
 ```
 
-명령 계약 상세 문서:
-- `docs/command-contracts.md`
+참고: [SPEC.md](docs/SPEC.md) · [command-contracts.md](docs/command-contracts.md)

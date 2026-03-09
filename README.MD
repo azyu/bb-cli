@@ -1,81 +1,135 @@
-# Bitbucket CLI (Cloud MVP)
+# bb
 
-| English | [한국어](README.ko-kr.MD) |
+[![CI](https://github.com/azyu/bb/actions/workflows/ci.yml/badge.svg)](https://github.com/azyu/bb/actions/workflows/ci.yml)
+[![Release](https://img.shields.io/github/v/release/azyu/bb)](https://github.com/azyu/bb/releases/latest)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
-## Overview
-`bb` is a Rust-based Bitbucket Cloud CLI inspired by `gh`-style command grouping.
+[English](README.md) | [한국어](README.ko-kr.MD)
 
-Technical spec and active implementation contract:
-- `docs/SPEC.md`
+> A fast, agent-friendly Bitbucket Cloud CLI inspired by `gh`. Built in Rust.
 
-Implemented commands:
-- `bb auth <login|status|logout>`
-- `bb api`
-- `bb repo <list>`
-- `bb pr <list|create|merge|get|update|approve|unapprove|request-changes|remove-request-changes|decline|comment|comments|diff|statuses|activity>`
-- `bb pipeline <list|run>`
-- `bb wiki <list|get|put>`
-- `bb issue <list|create|update>`
-- `bb completion <bash|zsh|fish|powershell>`
-- `bb version` / `bb --version`
+## Features
 
-PR wrapper naming follows Bitbucket Cloud REST operation titles where there is a direct mapping:
-- `get` / `update` instead of `view` / `edit`
-- `request-changes` / `remove-request-changes` instead of local synonyms
+- **`gh`-style command grouping** — familiar verb-noun structure
+- **Git remote inference** — auto-detects workspace/repo from `remote.origin.url`
+- **Agent-first design** — structured JSON output and error envelopes
+- **Multi-output formats** — `table`, `json`, `text`
+- **Shell completion** — bash / zsh / fish / powershell with 2-level subcommand support
+- **Cross-platform binaries** — Linux (amd64/arm64), macOS (arm64), Windows (x64/arm64)
+- **Raw API escape hatch** — `bb api` for any Bitbucket Cloud endpoint
 
-Every command supports `--help` / `-h` for detailed usage with `--flag` format:
+## Installation
+
+### Homebrew
+
 ```bash
-bb pr --help          # group: list subcommands
-bb pr create --help   # leaf: show flags with descriptions
+brew install azyu/tap/bb
 ```
 
-## Install
+### Prebuilt binary
+
+Download from [GitHub Releases](https://github.com/azyu/bb/releases/latest).
+
+| Platform | Asset |
+|----------|-------|
+| Linux amd64 | `bb_linux_amd64.tar.gz` |
+| Linux arm64 | `bb_linux_arm64.tar.gz` |
+| macOS arm64 | `bb_macos_arm64.tar.gz` |
+| Windows x64 | `bb_windows_x64.zip` |
+| Windows arm64 | `bb_windows_arm64.zip` |
 
 ### From source
-Requires Rust `1.93+`.
 
-## Build
+Requires Rust 1.93+.
+
 ```bash
-make build        # -> rust/target/debug/bb
-make install      # -> ~/.local/bin/bb
-make test         # run all tests
-make lint         # cargo check --all-targets
-make fmt          # cargo fmt --all
-make help         # show all targets
+make install   # builds release binary → ~/.local/bin/bb
 ```
 
-Or build manually:
+## Quick Start
+
+### 1. Authenticate
+
 ```bash
-BB_BUILD_COMMIT=$(git rev-parse --short HEAD) BB_BUILD_DATE=$(date -u +"%Y-%m-%dT%H:%M:%SZ") \
-  cargo build --manifest-path rust/Cargo.toml -p bb-cli --bin bb --release
+bb auth login --username "<bitbucket-email>" --token "<your-token>"
 ```
 
-## How To Create A Bitbucket API Token
-This CLI uses a Bitbucket token for authentication.
+> [!TIP]
+> You can also pipe the token via stdin or set environment variables:
+> ```bash
+> echo "<token>" | bb auth login --username "<email>" --with-token
+> BITBUCKET_USERNAME="<email>" BITBUCKET_TOKEN="<token>" bb auth login
+> ```
 
-Auth mode:
-- API token (personal): use Basic auth (`username/email + token`)
-- Access-token-style flows: Bearer token mode (no username)
-- Wiki Git auth mapping:
-  - Personal API token profile (email username) -> `x-bitbucket-api-token-auth`
-  - Access-token-style profile (no username) -> `x-token-auth`
+### 2. Verify
 
-Steps (Bitbucket Cloud):
-1. Open Bitbucket Cloud and go to Personal settings.
-2. Open `API tokens`.
-3. Click `Create API token`.
-4. Name the token and choose scopes required for your use case.
-5. Create and copy the token value once shown.
+```bash
+bb auth status
+```
 
-Official docs:
-- https://support.atlassian.com/bitbucket-cloud/docs/create-an-api-token/
-- https://support.atlassian.com/bitbucket-cloud/docs/api-token-permissions/
+### 3. Use
 
-## Recommended Token Scopes
-Use least privilege. Start with the minimum required scopes and add only what is needed.
+Inside a Bitbucket repo directory, workspace and repo flags are inferred automatically:
 
-### Recommended for general developer use
-Default profile (safe baseline):
+```bash
+bb pr list
+bb pr create --title "My PR" --source feature --destination main
+bb repo list
+bb pipeline list
+```
+
+### 4. Enable shell completion
+
+```bash
+bb completion zsh   # bash / zsh / fish / powershell
+```
+
+## Commands
+
+| Group | Subcommands | Auth scope |
+|-------|-------------|------------|
+| `bb auth` | `login`, `status`, `logout` | — |
+| `bb repo` | `list` | `read:repository` |
+| `bb pr` | `list`, `get`, `create`, `update`, `merge`, `approve`, `unapprove`, `request-changes`, `remove-request-changes`, `decline`, `comment`, `comments`, `diff`, `statuses`, `activity` | `read/write:pullrequest` |
+| `bb pipeline` | `list`, `run` | `read/write:pipeline` |
+| `bb wiki` | `list`, `get`, `put` | `read/write:wiki` |
+| `bb issue` | `list`, `create`, `update` | `read/write:issue` |
+| `bb api` | *(raw endpoint)* | varies |
+| `bb completion` | `bash`, `zsh`, `fish`, `powershell` | — |
+
+> [!NOTE]
+> PR subcommand names follow Bitbucket Cloud REST operation titles:
+> `get`/`update` instead of `view`/`edit`, `request-changes`/`remove-request-changes` instead of local synonyms.
+
+Use `bb <command> --help` for detailed flag descriptions.
+
+## Configuration
+
+Config path priority:
+
+1. `BB_CONFIG_PATH` (explicit override)
+2. `$XDG_CONFIG_HOME/bb/config.json`
+3. `~/.config/bb/config.json` (default)
+
+> [!CAUTION]
+> Tokens are stored as **plain text** in the config file (MVP state). Guard file permissions accordingly.
+
+## Authentication
+
+Two auth modes are supported:
+
+| Mode | Scheme | Username required |
+|------|--------|-------------------|
+| Personal API token | Basic (`username:token`) | Yes |
+| Access token | Bearer | No |
+
+For token creation, see the [Atlassian docs](https://support.atlassian.com/bitbucket-cloud/docs/create-an-api-token/).
+For scope reference, see the [API token permissions](https://support.atlassian.com/bitbucket-cloud/docs/api-token-permissions/).
+
+## Token Scopes
+
+Recommended baseline (read-only):
+
 - `read:repository:bitbucket`
 - `read:pullrequest:bitbucket`
 - `read:pipeline:bitbucket`
@@ -84,193 +138,38 @@ Default profile (safe baseline):
 - `read:user:bitbucket`
 - `read:workspace:bitbucket`
 
-If developers need to create/update PRs or trigger pipelines, add:
-- `write:pullrequest:bitbucket`
-- `write:pipeline:bitbucket`
-- `write:issue:bitbucket`
-- `write:wiki:bitbucket`
+Add `write:*` scopes as needed for mutating commands.
 
-### CLI Scope Matrix
-| Command / use case | Recommended scopes |
-| --- | --- |
-| `bb repo list` (repo read) | `read:repository:bitbucket` |
-| `bb pr list/get/comments/diff/statuses/activity` (PR read) | `read:repository:bitbucket`, `read:pullrequest:bitbucket` |
-| `bb pr create/update/merge/approve/unapprove/request-changes/remove-request-changes/decline/comment` (PR write) | `read:repository:bitbucket`, `read:pullrequest:bitbucket`, `write:pullrequest:bitbucket` |
-| `bb pipeline list` (pipeline read) | `read:repository:bitbucket`, `read:pipeline:bitbucket` |
-| `bb pipeline run` (pipeline write) | `read:repository:bitbucket`, `read:pipeline:bitbucket`, `write:pipeline:bitbucket` |
-| `bb wiki list/get` (wiki read) | `read:repository:bitbucket`, `read:wiki:bitbucket` |
-| `bb wiki put` (wiki write) | `read:repository:bitbucket`, `read:wiki:bitbucket`, `write:wiki:bitbucket` |
-| `bb issue list` (issue read) | `read:repository:bitbucket`, `read:issue:bitbucket` |
-| `bb issue create/update` (issue write) | `read:repository:bitbucket`, `read:issue:bitbucket`, `write:issue:bitbucket` |
-| `bb api` (user/workspace endpoints) | `read:user:bitbucket`, `read:workspace:bitbucket` |
-| `bb completion`, `bb version` | no additional scopes |
+<details>
+<summary>Full CLI scope matrix</summary>
 
-### Avoid by default
-- `admin:*`
-- `delete:*`
-- `write:permission:bitbucket` unless explicitly required
+| Command | Required scopes |
+|---------|----------------|
+| `bb repo list` | `read:repository` |
+| `bb pr list/get/comments/diff/statuses/activity` | `read:repository`, `read:pullrequest` |
+| `bb pr create/update/merge/approve/…/comment` | `read:repository`, `read:pullrequest`, `write:pullrequest` |
+| `bb pipeline list` | `read:repository`, `read:pipeline` |
+| `bb pipeline run` | `read:repository`, `read:pipeline`, `write:pipeline` |
+| `bb wiki list/get` | `read:repository`, `read:wiki` |
+| `bb wiki put` | `read:repository`, `read:wiki`, `write:wiki` |
+| `bb issue list` | `read:repository`, `read:issue` |
+| `bb issue create/update` | `read:repository`, `read:issue`, `write:issue` |
+| `bb api` | `read:user`, `read:workspace` (varies) |
+| `bb completion`, `bb version` | — |
 
-## Quick Start
-1. Login with token:
-```bash
-bb auth login --username "<bitbucket-email>" --token "<your-token>" --profile default
-```
+**Avoid by default:** `admin:*`, `delete:*`, `write:permission:bitbucket`
 
-Alternative (stdin):
-```bash
-echo "<your-token>" | bb auth login --username "<bitbucket-email>" --with-token --profile default
-```
-
-Alternative (env):
-```bash
-BITBUCKET_USERNAME="<bitbucket-email>" BITBUCKET_TOKEN="<your-token>" bb auth login --profile default
-```
-
-2. Check auth:
-```bash
-bb auth status
-```
-
-Optional: logout current profile (or a specific profile):
-```bash
-bb auth logout
-bb auth logout --profile <profile-name>
-```
-
-3. Check version:
-```bash
-bb version
-```
-
-4. List repositories:
-```bash
-bb repo list --workspace <workspace-slug>
-```
-Inside a Bitbucket repository, `bb repo list` can infer `<workspace>` from `remote.origin.url`.
-
-5. Call API directly:
-```bash
-bb api /repositories/<workspace-slug>
-bb api --paginate /repositories/<workspace-slug>
-```
-
-6. List PRs:
-```bash
-bb pr list --workspace <workspace-slug> --repo <repo-slug>
-```
-`table` output is shown in a `gh pr list`-like layout (summary line + `ID/TITLE/BRANCH/CREATED AT`).
-ANSI color is enabled on terminal output; use `BB_COLOR=always|never` or `NO_COLOR=1` to control it.
-Inside a Bitbucket repository, repo-scoped commands can infer `<workspace>/<repo>` from `remote.origin.url` when omitted:
-```bash
-bb pr list
-bb pr create --title "My PR" --source feature --destination main
-bb pr merge --id 42 --strategy squash
-bb pipeline list
-bb pipeline run --branch main
-bb issue list
-bb issue create --title "My issue" --content "details"
-bb issue update --id 1 --state resolved
-bb wiki list
-bb wiki get --page Home.md
-bb wiki put --page Home.md --content "# Updated"
-```
-
-7. Create PR (write scope required):
-```bash
-bb pr create --workspace <workspace-slug> --repo <repo-slug> --title "My PR" --source feature --destination main
-bb pr create --title "My PR" --source feature --destination main --close-branch
-```
-
-8. Merge PR (write scope required):
-```bash
-bb pr merge --workspace <workspace-slug> --repo <repo-slug> --id 42
-bb pr merge --id 42 --strategy squash --close-branch
-bb pr merge --id 42 --message "Ship it" --strategy merge_commit
-```
-
-9. Inspect or review an existing PR:
-```bash
-bb pr get --id 42
-bb pr diff --id 42
-bb pr comments --id 42
-bb pr statuses --id 42 --output json
-bb pr activity --id 42
-```
-
-10. Update or review-state a PR (write scope required):
-```bash
-bb pr update --id 42 --title "Retitle PR" --description "Updated summary"
-bb pr approve --id 42
-bb pr unapprove --id 42
-bb pr request-changes --id 42
-bb pr remove-request-changes --id 42
-bb pr decline --id 42
-bb pr comment --id 42 --content "Please rename this function."
-```
-
-11. List pipelines:
-```bash
-bb pipeline list --workspace <workspace-slug> --repo <repo-slug>
-```
-
-12. Trigger pipeline (write scope required):
-```bash
-bb pipeline run --workspace <workspace-slug> --repo <repo-slug> --branch main
-```
-
-13. Generate shell completion (supports subcommand completion):
-```bash
-bb completion zsh
-# bash/zsh/fish/powershell supported; includes 2-level subcommand completion
-# e.g. `bb pr<TAB>` -> list, create, merge, get, update, approve, ...
-```
-
-14. List issues:
-```bash
-bb issue list --workspace <workspace-slug> --repo <repo-slug>
-```
-
-15. Create issue (write scope required):
-```bash
-bb issue create --workspace <workspace-slug> --repo <repo-slug> --title "My issue" --content "details"
-```
-
-16. Update issue (write scope required):
-```bash
-bb issue update --workspace <workspace-slug> --repo <repo-slug> --id 1 --state resolved
-```
-
-17. List wiki files:
-```bash
-bb wiki list --workspace <workspace-slug> --repo <repo-slug>
-```
-
-18. Read wiki page:
-```bash
-bb wiki get --workspace <workspace-slug> --repo <repo-slug> --page Home.md
-```
-
-19. Update wiki page (write scope required):
-```bash
-bb wiki put --workspace <workspace-slug> --repo <repo-slug> --page Home.md --content "# Updated"
-```
-
-## Configuration
-Config path priority:
-1. `BB_CONFIG_PATH` (explicit override)
-2. `$XDG_CONFIG_HOME/bb/config.json` (if `XDG_CONFIG_HOME` is set)
-3. `~/.config/bb/config.json` (default)
-
-Security note:
-- Token is currently stored as plain text in the config file (MVP state).
-- Config directory is created on demand under the resolved XDG path.
+</details>
 
 ## Development
+
 ```bash
-make test
-make lint
-make fmt
+make build    # debug build
+make install  # release build → ~/.local/bin/bb
+make test     # run all tests
+make lint     # cargo check --all-targets
+make fmt      # cargo fmt --all
+make help     # show all targets
 ```
 
-For detailed command contracts:
-- `docs/command-contracts.md`
+See also: [SPEC.md](docs/SPEC.md) · [command-contracts.md](docs/command-contracts.md)
