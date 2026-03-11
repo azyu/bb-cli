@@ -20,6 +20,7 @@
 
 ## Backlog
 
+- [x] Add root help quick-start scenarios for agent-first onboarding (`bb` no-arg help examples) - owner: agent
 - [x] Expand `bb pr` with Bitbucket API-aligned read/write commands (`get`, `update`, `approve`, `unapprove`, `request-changes`, `remove-request-changes`, `decline`, `comment`, `comments`, `diff`, `statuses`, `activity`) - owner: agent
 - [x] Expand `bb pipeline` with read commands for PR debugging (`get`, `steps`, `log`) - owner: agent
 - [x] Tighten pipeline UUID validation for `get`, `steps`, and `log` review feedback - owner: agent
