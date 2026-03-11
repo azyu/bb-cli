@@ -453,7 +453,7 @@ fn handle_pr_merge<O: Write>(request: &PrMergeRequest, stdout: &mut O) -> Result
     let output = parse_write_output(&request.output)?;
     let (workspace, repo) =
         context::resolve_repo_target(request.workspace.as_deref(), request.repo.as_deref(), true)?;
-    let id = parse_numeric_id(request.id.as_deref(), "--id is required")?;
+    let id = parse_pr_numeric_id(request.id.as_deref())?;
     let strategy = normalize_merge_strategy(request.strategy.as_deref())?;
     let client = client_from_profile(request.profile.as_deref())?;
     let mut body = json!({});
@@ -498,7 +498,7 @@ fn handle_pr_get<O: Write>(request: &PrGetRequest, stdout: &mut O) -> Result<(),
     let output = parse_write_output(&request.output)?;
     let (workspace, repo) =
         context::resolve_repo_target(request.workspace.as_deref(), request.repo.as_deref(), true)?;
-    let id = parse_numeric_id(request.id.as_deref(), "--id is required")?;
+    let id = parse_pr_numeric_id(request.id.as_deref())?;
     let client = client_from_profile(request.profile.as_deref())?;
     let value = client.request_value(
         Method::GET,
@@ -555,7 +555,7 @@ fn handle_pr_update<O: Write>(request: &PrUpdateRequest, stdout: &mut O) -> Resu
     let output = parse_write_output(&request.output)?;
     let (workspace, repo) =
         context::resolve_repo_target(request.workspace.as_deref(), request.repo.as_deref(), true)?;
-    let id = parse_numeric_id(request.id.as_deref(), "--id is required")?;
+    let id = parse_pr_numeric_id(request.id.as_deref())?;
     let client = client_from_profile(request.profile.as_deref())?;
     let mut body = json!({});
 
@@ -596,7 +596,7 @@ fn handle_pr_approve<O: Write>(request: &PrApproveRequest, stdout: &mut O) -> Re
     let output = parse_write_output(&request.output)?;
     let (workspace, repo) =
         context::resolve_repo_target(request.workspace.as_deref(), request.repo.as_deref(), true)?;
-    let id = parse_numeric_id(request.id.as_deref(), "--id is required")?;
+    let id = parse_pr_numeric_id(request.id.as_deref())?;
     let client = client_from_profile(request.profile.as_deref())?;
     let value = client.request_value(
         Method::POST,
@@ -618,7 +618,7 @@ fn handle_pr_unapprove<O: Write>(
     let output = parse_write_output(&request.output)?;
     let (workspace, repo) =
         context::resolve_repo_target(request.workspace.as_deref(), request.repo.as_deref(), true)?;
-    let id = parse_numeric_id(request.id.as_deref(), "--id is required")?;
+    let id = parse_pr_numeric_id(request.id.as_deref())?;
     let client = client_from_profile(request.profile.as_deref())?;
     client.request_text(
         Method::DELETE,
@@ -636,7 +636,7 @@ fn handle_pr_request_changes<O: Write>(
     let output = parse_write_output(&request.output)?;
     let (workspace, repo) =
         context::resolve_repo_target(request.workspace.as_deref(), request.repo.as_deref(), true)?;
-    let id = parse_numeric_id(request.id.as_deref(), "--id is required")?;
+    let id = parse_pr_numeric_id(request.id.as_deref())?;
     let client = client_from_profile(request.profile.as_deref())?;
     let value = client.request_value(
         Method::POST,
@@ -660,7 +660,7 @@ fn handle_pr_remove_request_changes<O: Write>(
     let output = parse_write_output(&request.output)?;
     let (workspace, repo) =
         context::resolve_repo_target(request.workspace.as_deref(), request.repo.as_deref(), true)?;
-    let id = parse_numeric_id(request.id.as_deref(), "--id is required")?;
+    let id = parse_pr_numeric_id(request.id.as_deref())?;
     let client = client_from_profile(request.profile.as_deref())?;
     client.request_text(
         Method::DELETE,
@@ -675,7 +675,7 @@ fn handle_pr_decline<O: Write>(request: &PrDeclineRequest, stdout: &mut O) -> Re
     let output = parse_write_output(&request.output)?;
     let (workspace, repo) =
         context::resolve_repo_target(request.workspace.as_deref(), request.repo.as_deref(), true)?;
-    let id = parse_numeric_id(request.id.as_deref(), "--id is required")?;
+    let id = parse_pr_numeric_id(request.id.as_deref())?;
     let client = client_from_profile(request.profile.as_deref())?;
     let value = client.request_value(
         Method::POST,
@@ -694,7 +694,7 @@ fn handle_pr_comment<O: Write>(request: &PrCommentRequest, stdout: &mut O) -> Re
     let output = parse_write_output(&request.output)?;
     let (workspace, repo) =
         context::resolve_repo_target(request.workspace.as_deref(), request.repo.as_deref(), true)?;
-    let id = parse_numeric_id(request.id.as_deref(), "--id is required")?;
+    let id = parse_pr_numeric_id(request.id.as_deref())?;
     let content = required_string("--content is required", request.content.as_deref())?;
     let client = client_from_profile(request.profile.as_deref())?;
     let value = client.request_value(
@@ -734,7 +734,7 @@ fn handle_pr_comments<O: Write>(
     let output = parse_list_output(&request.output)?;
     let (workspace, repo) =
         context::resolve_repo_target(request.workspace.as_deref(), request.repo.as_deref(), true)?;
-    let id = parse_numeric_id(request.id.as_deref(), "--id is required")?;
+    let id = parse_pr_numeric_id(request.id.as_deref())?;
     let client = client_from_profile(request.profile.as_deref())?;
     let path = format!("/repositories/{workspace}/{repo}/pullrequests/{id}/comments");
     let query = collect_query([
@@ -756,7 +756,7 @@ fn handle_pr_diff<O: Write>(request: &PrDiffRequest, stdout: &mut O) -> Result<(
     let output = parse_write_output(&request.output)?;
     let (workspace, repo) =
         context::resolve_repo_target(request.workspace.as_deref(), request.repo.as_deref(), true)?;
-    let id = parse_numeric_id(request.id.as_deref(), "--id is required")?;
+    let id = parse_pr_numeric_id(request.id.as_deref())?;
     let client = client_from_profile(request.profile.as_deref())?;
     let diff = client.request_text(
         Method::GET,
@@ -783,7 +783,7 @@ fn handle_pr_statuses<O: Write>(
     let output = parse_list_output(&request.output)?;
     let (workspace, repo) =
         context::resolve_repo_target(request.workspace.as_deref(), request.repo.as_deref(), true)?;
-    let id = parse_numeric_id(request.id.as_deref(), "--id is required")?;
+    let id = parse_pr_numeric_id(request.id.as_deref())?;
     let client = client_from_profile(request.profile.as_deref())?;
     let path = format!("/repositories/{workspace}/{repo}/pullrequests/{id}/statuses");
     let query = collect_query([
@@ -808,7 +808,7 @@ fn handle_pr_activity<O: Write>(
     let output = parse_list_output(&request.output)?;
     let (workspace, repo) =
         context::resolve_repo_target(request.workspace.as_deref(), request.repo.as_deref(), true)?;
-    let id = parse_numeric_id(request.id.as_deref(), "--id is required")?;
+    let id = parse_pr_numeric_id(request.id.as_deref())?;
     let client = client_from_profile(request.profile.as_deref())?;
     let path = format!("/repositories/{workspace}/{repo}/pullrequests/{id}/activity");
     let query = collect_query([
@@ -1379,12 +1379,12 @@ fn normalize_merge_strategy(value: Option<&str>) -> Result<Option<String>, CliEr
     }
 }
 
-fn parse_numeric_id(value: Option<&str>, missing_message: &str) -> Result<String, CliError> {
-    let value = required_string(missing_message, value)?;
+fn parse_pr_numeric_id(value: Option<&str>) -> Result<String, CliError> {
+    let value = required_string("pull request id is required: pass <id> or --id", value)?;
     value
         .parse::<u64>()
         .map(|_| value.to_string())
-        .map_err(|_| CliError::InvalidInput(format!("--id must be a number: {value}")))
+        .map_err(|_| CliError::InvalidInput(format!("pull request id must be a number: {value}")))
 }
 
 fn collect_query<const N: usize>(pairs: [(&str, Option<&str>); N]) -> Vec<(String, String)> {

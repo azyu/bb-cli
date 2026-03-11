@@ -20,6 +20,7 @@
 
 ## Backlog
 
+- [x] Support positional PR IDs across `bb pr` ID-based commands alongside `--id` - owner: agent
 - [x] Align `bb --help` with root no-arg quick-start help - owner: agent
 - [x] Add root help quick-start scenarios for agent-first onboarding (`bb` no-arg help examples) - owner: agent
 - [x] Expand `bb pr` with Bitbucket API-aligned read/write commands (`get`, `update`, `approve`, `unapprove`, `request-changes`, `remove-request-changes`, `decline`, `comment`, `comments`, `diff`, `statuses`, `activity`) - owner: agent
