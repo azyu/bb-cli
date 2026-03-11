@@ -594,8 +594,11 @@ where
     T: Into<OsString>,
 {
     let normalized = normalize_args(args.into_iter().map(Into::into).collect());
-    if normalized.len() == 2 && normalized[1].to_string_lossy() == "help" {
-        return Ok(Request::RootHelp);
+    if normalized.len() == 2 {
+        let arg = normalized[1].to_string_lossy();
+        if arg == "help" || arg == "--help" || arg == "-h" {
+            return Ok(Request::RootHelp);
+        }
     }
 
     let cli = Cli::try_parse_from(normalized)?;
@@ -913,6 +916,12 @@ mod tests {
     #[test]
     fn root_without_command_maps_to_root_help() {
         let request = parse_from(["bb"]).expect("parse should succeed");
+        assert!(matches!(request, Request::RootHelp));
+    }
+
+    #[test]
+    fn root_help_flag_maps_to_root_help() {
+        let request = parse_from(["bb", "--help"]).expect("parse should succeed");
         assert!(matches!(request, Request::RootHelp));
     }
 

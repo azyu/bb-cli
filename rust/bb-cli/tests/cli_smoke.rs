@@ -37,6 +37,22 @@ fn root_help_prints_commands() {
 }
 
 #[test]
+fn root_help_flag_matches_no_arg_help() {
+    let no_arg = bb_command().output().expect("command should run");
+    assert!(no_arg.status.success());
+
+    let help_flag = bb_command()
+        .arg("--help")
+        .output()
+        .expect("command should run");
+    assert!(help_flag.status.success());
+
+    let no_arg_stdout = String::from_utf8(no_arg.stdout).expect("stdout should be utf-8");
+    let help_flag_stdout = String::from_utf8(help_flag.stdout).expect("stdout should be utf-8");
+    assert_eq!(help_flag_stdout, no_arg_stdout);
+}
+
+#[test]
 fn version_prints_metadata() {
     let output = bb_command()
         .arg("version")

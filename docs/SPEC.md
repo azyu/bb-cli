@@ -109,7 +109,7 @@ Still out of scope:
 - Text-mode errors go to stderr with non-zero exit status.
 - Commands that support machine-readable output emit JSON to stdout.
 - Commands with `--output json` must emit JSON error envelopes to stdout on failure.
-- Running `bb` with no arguments prints root help plus a short quick-start block for common agent-first flows.
+- Running `bb` with no arguments or top-level `--help` prints the same root help plus a short quick-start block for common agent-first flows.
 - Supported output modes:
   - list commands: `table|json`
   - write/detail commands: `text|json`
