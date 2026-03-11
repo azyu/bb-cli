@@ -39,6 +39,7 @@ Observed structural patterns to reuse:
 
 Reference:
 - Justin Poehnelt, "Improving Command-Line Programs for LLMs": https://justin.poehnelt.com/posts/llm-friendly-cli-programs/
+- Justin Poehnelt, "You Need to Rewrite Your CLI for AI Agents": https://justin.poehnelt.com/posts/rewrite-your-cli-for-ai-agents/
 - Korean summary/discussion: https://news.hada.io/topic?id=27246
 
 Observed patterns to reuse:
