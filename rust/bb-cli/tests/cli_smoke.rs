@@ -32,7 +32,7 @@ fn root_help_prints_commands() {
     assert!(stdout.contains("completion"));
     assert!(stdout.contains("Quick start:"));
     assert!(stdout.contains("bb pr create --workspace acme --repo widgets"));
-    assert!(stdout.contains("bb pr comments --workspace acme --repo widgets --id 123"));
+    assert!(stdout.contains("bb pr comments 123 --workspace acme --repo widgets"));
     assert!(stdout.contains("Add --output json"));
 }
 
@@ -143,6 +143,20 @@ fn pr_help_lists_api_aligned_commands() {
 }
 
 #[test]
+fn pr_comments_help_includes_positional_id() {
+    let output = bb_command()
+        .args(["pr", "comments", "--help"])
+        .output()
+        .expect("command should run");
+    assert!(output.status.success());
+
+    let stdout = String::from_utf8(output.stdout).expect("stdout should be utf-8");
+    assert!(stdout.contains("Usage: bb pr comments"));
+    assert!(stdout.contains("[ID]"));
+    assert!(stdout.contains("--id <ID>"));
+}
+
+#[test]
 fn pr_get_json_reads_config_and_calls_server() {
     let server = MockServer::start();
     let pr = server.mock(|when, then| {
@@ -165,12 +179,11 @@ fn pr_get_json_reads_config_and_calls_server() {
         .args([
             "pr",
             "get",
+            "42",
             "--workspace",
             "acme",
             "--repo",
             "widgets",
-            "--id",
-            "42",
             "--output",
             "json",
         ])
@@ -183,6 +196,50 @@ fn pr_get_json_reads_config_and_calls_server() {
     let body: serde_json::Value = serde_json::from_str(&stdout).expect("stdout should be json");
     assert_eq!(body["title"], "Add widget support");
     pr.assert();
+}
+
+#[test]
+fn pr_comments_positional_id_reads_config_and_calls_server() {
+    let server = MockServer::start();
+    let comments = server.mock(|when, then| {
+        when.method(GET)
+            .path("/2.0/repositories/acme/widgets/pullrequests/42/comments");
+        then.json_body(json!({
+            "values": [
+                {
+                    "id": 7,
+                    "content": { "raw": "needs changes" }
+                }
+            ]
+        }));
+    });
+
+    let temp = tempdir().unwrap();
+    let config_path = temp.path().join("config.json");
+    write_config(&config_path, &format!("{}/2.0", server.base_url()));
+
+    let output = bb_command()
+        .args([
+            "pr",
+            "comments",
+            "--workspace",
+            "acme",
+            "--repo",
+            "widgets",
+            "42",
+            "--output",
+            "json",
+        ])
+        .env("BB_CONFIG_PATH", &config_path)
+        .output()
+        .expect("command should run");
+
+    assert!(output.status.success());
+    let stdout = String::from_utf8(output.stdout).expect("stdout should be utf-8");
+    let body: serde_json::Value = serde_json::from_str(&stdout).expect("stdout should be json");
+    assert_eq!(body[0]["id"], 7);
+    assert_eq!(body[0]["content"]["raw"], "needs changes");
+    comments.assert();
 }
 
 #[test]
@@ -328,4 +385,32 @@ fn pr_comment_missing_content_emits_json_error() {
     let body: serde_json::Value = serde_json::from_str(&stdout).expect("stdout should be json");
     assert_eq!(body["error"]["code"], "invalid_input");
     assert_eq!(body["error"]["message"], "--content is required");
+}
+
+#[test]
+fn pr_comments_invalid_positional_id_emits_json_error() {
+    let output = bb_command()
+        .args([
+            "pr",
+            "comments",
+            "--workspace",
+            "acme",
+            "--repo",
+            "widgets",
+            "abc",
+            "--output",
+            "json",
+        ])
+        .output()
+        .expect("command should run");
+
+    assert!(!output.status.success());
+    assert!(output.stderr.is_empty());
+    let stdout = String::from_utf8(output.stdout).expect("stdout should be utf-8");
+    let body: serde_json::Value = serde_json::from_str(&stdout).expect("stdout should be json");
+    assert_eq!(body["error"]["code"], "invalid_input");
+    assert_eq!(
+        body["error"]["message"],
+        "pull request id must be a number: abc"
+    );
 }

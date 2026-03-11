@@ -124,6 +124,7 @@ Still out of scope:
   - columns `ID`, `TITLE`, `BRANCH`, `CREATED AT`
   - relative timestamps
   - color controls via `BB_COLOR`, `NO_COLOR`, `CLICOLOR`, `CLICOLOR_FORCE`
+- PR commands that operate on an existing pull request accept the pull request ID as positional `<id>` or `--id`.
 
 ## Agent-Oriented CLI Rules
 - Prefer predictable structured output over prose for automation-facing commands.
