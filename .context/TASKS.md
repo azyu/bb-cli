@@ -31,5 +31,6 @@
 - [x] Refresh README and AGENTS docs for current Rust CLI surface - owner: agent
 - [x] Deduplicate `docs/SPEC.md` and `docs/command-contracts.md`; keep command contracts in one place - owner: agent
 - [x] Add gh-style JSON field projection for read commands (`--json-fields`) - owner: agent
+- [x] Align repo-local `.agents` skills with current workspace docs and command surface - owner: agent
 - [ ] Evaluate `bb pr checkout` local Git workflow for a future follow-up - owner: agent
 - [ ] Evaluate phase 2 agent-first extensions (`--describe` or schema introspection, `--dry-run`, separate automation surface if needed) - owner: agent

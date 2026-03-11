@@ -1,6 +1,6 @@
 ---
 name: bitbucket-cloud-api-playbook
-description: Implement and review Bitbucket Cloud REST integration for this repository's CLI. Use when adding or changing API client behavior, authentication, pagination, endpoint mapping, query filters, or API error handling for `bb auth`, `bb repo`, `bb pr`, `bb pipeline`, and `bb api` commands.
+description: Implement and review Bitbucket Cloud REST integration for this repository's CLI. Use when adding or changing API client behavior, authentication, pagination, endpoint mapping, query filters, or API error handling for `bb auth`, `bb repo`, `bb pr`, `bb pipeline`, `bb issue`, and `bb api` commands.
 ---
 
 # Bitbucket Cloud API Playbook
@@ -32,4 +32,6 @@ description: Implement and review Bitbucket Cloud REST integration for this repo
 
 - Endpoint map: `references/endpoints.md`
 - Error/output guidance: `references/error-contract.md`
+- Shared implementation rules: `docs/SPEC.md`
+- Active command contracts: `docs/command-contracts.md`
 - Project baseline: `docs/references.md`

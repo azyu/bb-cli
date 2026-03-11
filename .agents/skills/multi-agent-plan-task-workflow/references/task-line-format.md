@@ -1,4 +1,4 @@
-# TASKS.md Line Format
+# `.context/TASKS.md` Line Format
 
 Preferred line shape:
 - `- [ ] <task summary> - owner: <name> (<optional status note>)`

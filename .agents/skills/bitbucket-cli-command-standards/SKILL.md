@@ -16,7 +16,7 @@ Use this skill when changing CLI UX shape, including:
 
 ## Command Contract Rules
 
-- Keep top-level command groups aligned with current plan: `auth`, `repo`, `pr`, `pipeline`, `issue`, `api`, `completion`.
+- Keep top-level command groups aligned with the current command surface: `auth`, `repo`, `pr`, `pipeline`, `issue`, `wiki`, `api`, `completion`, `version`.
 - Use explicit flags for non-deterministic context (`--workspace`, `--repo`).
 - Keep human output concise and provide JSON mode for automation.
 - Avoid introducing flags/options not required by the current task.
@@ -32,4 +32,6 @@ Use this skill when changing CLI UX shape, including:
 ## References
 
 - Contract template: `references/command-contract-template.md`
+- Active command contracts: `docs/command-contracts.md`
+- Shared implementation rules: `docs/SPEC.md`
 - Project baseline: `docs/references.md`
