@@ -10,11 +10,15 @@ This document is the contract baseline for `bb` command behavior.
 - Versioning: SemVer + short git hash build metadata (e.g. `0.0.1+abc1234`)
 - Repo context inference: for repo-scoped commands, `--workspace`/`--repo` can be inferred from local Bitbucket `remote.origin.url` (`https://bitbucket.org/<workspace>/<repo>.git` or `git@bitbucket.org:<workspace>/<repo>.git`) when omitted
 - Root help behavior: `bb` and top-level `bb --help` print the same top-level help with a short quick-start block for auth and common PR flows (`pr create`, `pr comments`) plus a note about `--output json`
+- `bb help` is a root-help alias and prints the same output as `bb`/`bb --help`
 - Existing-PR commands under `bb pr` accept the pull request ID as positional `<id>` or `--id`; passing both in one invocation is an error
 - Selected read commands support `--json-fields <comma-separated-fields>` as a client-side JSON projection helper; it only works with `--output json`
 - Output policy:
   - Human output for operator use (`table` or concise text)
   - JSON output for automation where supported
+- Error policy:
+  - Runtime failures for JSON-capable commands emit JSON error envelopes when JSON mode is selected
+  - CLI parse/help failures are emitted before runtime dispatch and remain clap-rendered text
 
 ## `bb auth`
 
@@ -97,7 +101,7 @@ This document is the contract baseline for `bb` command behavior.
 
 ## `bb version`
 
-### `bb version` / `bb --version`
+### `bb version` / `bb --version` / `bb -v`
 - Purpose: Show build metadata for traceability.
 - Output:
   - `bb version <semver+short-hash>`
@@ -595,10 +599,10 @@ Implementation note:
 
 ## `bb completion`
 
-### `bb completion <bash|zsh|fish|powershell>`
+### `bb completion [bash|zsh|fish|powershell]`
 - Purpose: Print shell completion script to stdout.
 - Output:
-  - Raw completion script for the selected shell
+  - No shell arg: completion usage text
+  - Shell arg present: raw completion script for the selected shell
 - Failure behavior:
-  - Wrong argument count -> non-zero exit with usage
   - Unsupported shell -> non-zero exit
