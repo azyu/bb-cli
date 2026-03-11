@@ -174,6 +174,7 @@ Still out of scope:
 ## Build and Release
 - Cargo is the primary build surface.
 - CI and release workflows build Rust artifacts named `bb`.
+- Release workflow runs on version tag pushes matching `v*.*.*` and also supports manual `workflow_dispatch` with an explicit release tag.
 - Release workflow publishes:
   - `linux_amd64` as `.tar.gz`
   - `linux_arm64` as `.tar.gz`

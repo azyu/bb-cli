@@ -1,12 +1,18 @@
 name: Release Build
 
 on:
+  push:
+    tags:
+      - "v*.*.*"
   workflow_dispatch:
     inputs:
       release_tag:
         description: "Release tag (vMAJOR.MINOR.PATCH), e.g. v0.0.1"
         required: true
         type: string
+
+env:
+  RELEASE_TAG: ${{ github.event_name == 'workflow_dispatch' && inputs.release_tag || github.ref_name }}
 
 permissions:
   contents: read
@@ -54,13 +60,13 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
         with:
-          ref: ${{ inputs.release_tag }}
+          ref: ${{ env.RELEASE_TAG }}
 
       - name: Validate release tag format
         shell: bash
         run: |
           set -euo pipefail
-          TAG="${{ inputs.release_tag }}"
+          TAG="${{ env.RELEASE_TAG }}"
           if [[ ! "${TAG}" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
             echo "Invalid release tag: ${TAG}"
             echo "Expected format: vMAJOR.MINOR.PATCH (example: v0.0.1)"
@@ -82,7 +88,7 @@ jobs:
           BB_BUILD_DATE: ${{ github.event.repository.updated_at }}
         run: |
           set -euo pipefail
-          VERSION="${{ inputs.release_tag }}"
+          VERSION="${{ env.RELEASE_TAG }}"
           VERSION="${VERSION#v}"
           BB_BUILD_VERSION="${VERSION}" \
             cargo build --manifest-path rust/Cargo.toml -p bb-cli --bin bb --release --target "${{ matrix.target }}"
@@ -92,7 +98,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          VERSION="${{ inputs.release_tag }}"
+          VERSION="${{ env.RELEASE_TAG }}"
           VERSION="${VERSION#v}"
           ARCHIVE_NAME="bb_${VERSION}_${{ matrix.platform_id }}"
 
@@ -106,7 +112,7 @@ jobs:
         if: runner.os == 'Windows'
         shell: pwsh
         run: |
-          $Version = "${{ inputs.release_tag }}" -replace '^v', ''
+          $Version = "${{ env.RELEASE_TAG }}" -replace '^v', ''
           $ArchiveName = "bb_${Version}_${{ matrix.platform_id }}"
 
           New-Item -ItemType Directory -Path staging | Out-Null
@@ -151,7 +157,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
-          TAG="${{ inputs.release_tag }}"
+          TAG="${{ env.RELEASE_TAG }}"
 
           if gh release view "${TAG}" --repo "${GITHUB_REPOSITORY}" >/dev/null 2>&1; then
             gh release upload "${TAG}" dist/* --clobber --repo "${GITHUB_REPOSITORY}"
@@ -189,7 +195,7 @@ jobs:
         shell: bash
         env:
           GH_TOKEN: ${{ github.token }}
-          VERSION: ${{ inputs.release_tag }}
+          VERSION: ${{ env.RELEASE_TAG }}
         run: |
           set -euo pipefail
 
@@ -223,7 +229,7 @@ jobs:
         shell: bash
         working-directory: homebrew-tap
         env:
-          VERSION: ${{ inputs.release_tag }}
+          VERSION: ${{ env.RELEASE_TAG }}
         run: |
           set -euo pipefail
 
