@@ -5,8 +5,13 @@
 ## Project Structure
 
 Current repository state:
+- `README.MD`: primary user-facing overview and quick start (English).
+- `README.ko-kr.MD`: Korean user-facing overview and quick start.
+- `rust/bb-cli`: CLI parsing, process behavior, and binary entrypoint.
+- `rust/bb-core`: runtime, config, Bitbucket client, rendering, and command handlers.
 - `docs/references.md`: baseline research for Bitbucket CLI scope, API references, and MVP direction.
 - `docs/SPEC.md`: canonical technical specification for the active implementation target, including agent-oriented CLI rules.
+- `docs/command-contracts.md`: command-by-command behavior contract for the Cloud CLI surface.
 - `.context/TASKS.md`: work item tracker for agent-level execution status.
 - `.context/STEERING.md`: high-level plan tracker (phases, success criteria, current focus).
 
@@ -14,10 +19,11 @@ Project goal (source of truth: `docs/references.md`):
 - Build a Bitbucket CLI similar to `gh` and `tea`.
 - Keep first implementation focused on **Bitbucket Cloud**.
 
-If you add source code, keep layout simple and explicit:
-- Put runtime code in one top-level code directory (for example `src/` or language-standard equivalent).
-- Put tests in one clear test location (for example `tests/` or language-standard equivalent).
-- Update this file once the toolchain is chosen.
+The toolchain and layout are already chosen:
+- Rust workspace rooted at `rust/`
+- CLI entrypoint in `rust/bb-cli`
+- shared implementation in `rust/bb-core`
+- integration-style CLI smoke tests in `rust/bb-cli/tests`
 
 ## Multi-Agent Coordination
 
@@ -32,6 +38,12 @@ Mandatory startup rule for every agent task:
 4. Only then start implementation.
 
 If there is any ambiguity about command behavior, output contracts, or agent-facing constraints, resolve it against `docs/SPEC.md` before changing code.
+
+Document roles:
+- `README.MD` and `README.ko-kr.MD` are for end users.
+- `AGENTS.md` is for coding agents and contributors working in this repository.
+- `docs/SPEC.md` is the implementation source of truth.
+- `docs/command-contracts.md` is the command behavior reference.
 
 Update rules during work:
 - Before starting a task, assign the owner and add `(in progress)` on that task line.

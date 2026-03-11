@@ -4,19 +4,17 @@
 [![Release](https://img.shields.io/github/v/release/azyu/bb-cli)](https://github.com/azyu/bb-cli/releases/latest)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
-[English](README.md) | [한국어](README.ko-kr.MD)
+[English](README.MD) | [한국어](README.ko-kr.MD)
 
-> A fast, agent-friendly Bitbucket Cloud CLI inspired by `gh`. Built in Rust.
+> A fast, agent-friendly Bitbucket Cloud CLI inspired by `gh`, built in Rust.
 
 ## Features
 
-- **`gh`-style command grouping** — familiar verb-noun structure
-- **Git remote inference** — auto-detects workspace/repo from `remote.origin.url`
-- **Agent-first design** — structured JSON output and error envelopes
-- **Multi-output formats** — `table`, `json`, `text`
-- **Shell completion** — bash / zsh / fish / powershell with 2-level subcommand support
-- **Cross-platform binaries** — Linux (amd64/arm64), macOS (arm64), Windows (x64/arm64)
-- **Raw API escape hatch** — `bb api` for any Bitbucket Cloud endpoint
+- `gh`-style command groups for repos, PRs, pipelines, issues, wiki, and raw API calls
+- Repo inference from local Bitbucket `remote.origin.url`
+- Human-friendly text/table output plus stable JSON output for automation
+- Shell completion for bash, zsh, fish, and PowerShell
+- Cross-platform release binaries for Linux, macOS, and Windows
 
 ## Installation
 
@@ -26,24 +24,24 @@
 brew install azyu/tap/bb
 ```
 
-### Prebuilt binary
+### Prebuilt binaries
 
-Download from [GitHub Releases](https://github.com/azyu/bb-cli/releases/latest).
+Download the latest archive from [GitHub Releases](https://github.com/azyu/bb-cli/releases/latest).
 
 | Platform | Asset |
 |----------|-------|
-| Linux amd64 | `bb_linux_amd64.tar.gz` |
-| Linux arm64 | `bb_linux_arm64.tar.gz` |
-| macOS arm64 | `bb_macos_arm64.tar.gz` |
-| Windows x64 | `bb_windows_x64.zip` |
-| Windows arm64 | `bb_windows_arm64.zip` |
+| Linux amd64 | `bb_0.x.y_linux_amd64.tar.gz` |
+| Linux arm64 | `bb_0.x.y_linux_arm64.tar.gz` |
+| macOS arm64 | `bb_0.x.y_macos_arm64.tar.gz` |
+| Windows x64 | `bb_0.x.y_windows_x64.zip` |
+| Windows arm64 | `bb_0.x.y_windows_arm64.zip` |
 
 ### From source
 
 Requires Rust 1.93+.
 
 ```bash
-make install   # builds release binary → ~/.local/bin/bb
+make install
 ```
 
 ## Quick Start
@@ -55,80 +53,81 @@ bb auth login --username "<bitbucket-email>" --token "<your-token>"
 ```
 
 > [!TIP]
-> You can also pipe the token via stdin or set environment variables:
+> You can also read the token from stdin or the environment.
 > ```bash
 > echo "<token>" | bb auth login --username "<email>" --with-token
 > BITBUCKET_USERNAME="<email>" BITBUCKET_TOKEN="<token>" bb auth login
 > ```
 
-### 2. Verify
+### 2. Verify the active profile
 
 ```bash
 bb auth status
 ```
 
-### 3. Use
+### 3. Run common commands
 
-Inside a Bitbucket repo directory, workspace and repo flags are inferred automatically:
+Inside a Bitbucket repository, `bb` can infer `--workspace` and `--repo` from `remote.origin.url`.
 
 ```bash
 bb pr list
+bb pr comments 123
 bb pr create --title "My PR" --source feature --destination main
-bb repo list
 bb pipeline list
+bb pipeline get --uuid "{pipeline-uuid}"
 ```
 
 ### 4. Enable shell completion
 
 ```bash
-bb completion zsh   # bash / zsh / fish / powershell
+bb completion zsh
 ```
 
-## Commands
+## Command Overview
 
-| Group | Subcommands | Auth scope |
-|-------|-------------|------------|
-| `bb auth` | `login`, `status`, `logout` | — |
-| `bb repo` | `list` | `read:repository` |
-| `bb pr` | `list`, `get`, `create`, `update`, `merge`, `approve`, `unapprove`, `request-changes`, `remove-request-changes`, `decline`, `comment`, `comments`, `diff`, `statuses`, `activity` | `read/write:pullrequest` |
-| `bb pipeline` | `list`, `run` | `read/write:pipeline` |
-| `bb wiki` | `list`, `get`, `put` | `read/write:wiki` |
-| `bb issue` | `list`, `create`, `update` | `read/write:issue` |
-| `bb api` | *(raw endpoint)* | varies |
-| `bb completion` | `bash`, `zsh`, `fish`, `powershell` | — |
+| Group | Subcommands |
+|-------|-------------|
+| `bb auth` | `login`, `status`, `logout` |
+| `bb repo` | `list` |
+| `bb pr` | `list`, `get`, `create`, `update`, `merge`, `approve`, `unapprove`, `request-changes`, `remove-request-changes`, `decline`, `comment`, `comments`, `diff`, `statuses`, `activity` |
+| `bb pipeline` | `list`, `get`, `steps`, `log`, `run` |
+| `bb issue` | `list`, `create`, `update` |
+| `bb wiki` | `list`, `get`, `put` |
+| `bb api` | raw Bitbucket Cloud endpoint access |
+| `bb completion` | `bash`, `zsh`, `fish`, `powershell` |
+| `bb version` | build metadata |
 
 > [!NOTE]
-> PR subcommand names follow Bitbucket Cloud REST operation titles:
-> `get`/`update` instead of `view`/`edit`, `request-changes`/`remove-request-changes` instead of local synonyms.
+> Existing-PR commands accept the pull request ID as positional `<id>` or `--id`.
+>
+> Example: `bb pr comments 123` and `bb pr comments --id 123` are both valid.
 
-Use `bb <command> --help` for detailed flag descriptions.
-
-## Configuration
+## Configuration and Auth
 
 Config path priority:
 
-1. `BB_CONFIG_PATH` (explicit override)
+1. `BB_CONFIG_PATH`
 2. `$XDG_CONFIG_HOME/bb/config.json`
-3. `~/.config/bb/config.json` (default)
+3. `~/.config/bb/config.json`
 
-> [!CAUTION]
-> Tokens are stored as **plain text** in the config file (MVP state). Guard file permissions accordingly.
-
-## Authentication
-
-Two auth modes are supported:
+Auth modes:
 
 | Mode | Scheme | Username required |
 |------|--------|-------------------|
 | Personal API token | Basic (`username:token`) | Yes |
 | Access token | Bearer | No |
 
-For token creation, see the [Atlassian docs](https://support.atlassian.com/bitbucket-cloud/docs/create-an-api-token/).
-For scope reference, see the [API token permissions](https://support.atlassian.com/bitbucket-cloud/docs/api-token-permissions/).
+> [!CAUTION]
+> Tokens are stored in plain text in the local config file. Keep file permissions tight.
 
-## Token Scopes
+For token creation and permission details, see the Atlassian docs:
 
-Recommended baseline (read-only):
+- [Create an API token](https://support.atlassian.com/bitbucket-cloud/docs/create-an-api-token/)
+- [API token permissions](https://support.atlassian.com/bitbucket-cloud/docs/api-token-permissions/)
+
+## Scope Guide
+
+Recommended read-only baseline:
 
 - `read:repository:bitbucket`
 - `read:pullrequest:bitbucket`
@@ -138,38 +137,28 @@ Recommended baseline (read-only):
 - `read:user:bitbucket`
 - `read:workspace:bitbucket`
 
-Add `write:*` scopes as needed for mutating commands.
+Add `write:*` scopes only for mutating commands.
 
 <details>
-<summary>Full CLI scope matrix</summary>
+<summary>Command scope matrix</summary>
 
 | Command | Required scopes |
-|---------|----------------|
+|---------|-----------------|
 | `bb repo list` | `read:repository` |
 | `bb pr list/get/comments/diff/statuses/activity` | `read:repository`, `read:pullrequest` |
-| `bb pr create/update/merge/approve/…/comment` | `read:repository`, `read:pullrequest`, `write:pullrequest` |
-| `bb pipeline list` | `read:repository`, `read:pipeline` |
+| `bb pr create/update/merge/approve/unapprove/request-changes/remove-request-changes/decline/comment` | `read:repository`, `read:pullrequest`, `write:pullrequest` |
+| `bb pipeline list/get/steps/log` | `read:repository`, `read:pipeline` |
 | `bb pipeline run` | `read:repository`, `read:pipeline`, `write:pipeline` |
 | `bb wiki list/get` | `read:repository`, `read:wiki` |
 | `bb wiki put` | `read:repository`, `read:wiki`, `write:wiki` |
 | `bb issue list` | `read:repository`, `read:issue` |
 | `bb issue create/update` | `read:repository`, `read:issue`, `write:issue` |
-| `bb api` | `read:user`, `read:workspace` (varies) |
-| `bb completion`, `bb version` | — |
-
-**Avoid by default:** `admin:*`, `delete:*`, `write:permission:bitbucket`
+| `bb api` | varies by endpoint |
+| `bb completion`, `bb version` | none |
 
 </details>
 
-## Development
+## Developer Docs
 
-```bash
-make build    # debug build
-make install  # release build → ~/.local/bin/bb
-make test     # run all tests
-make lint     # cargo check --all-targets
-make fmt      # cargo fmt --all
-make help     # show all targets
-```
-
-See also: [SPEC.md](docs/SPEC.md) · [command-contracts.md](docs/command-contracts.md)
+- [Technical spec](docs/SPEC.md)
+- [Command contracts](docs/command-contracts.md)
