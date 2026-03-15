@@ -1,6 +1,5 @@
 ---
 name: bb-cli
-version: 1.0.0
 description: "Bitbucket Cloud: inspect and operate repos, pull requests, pipelines, issues, wiki pages, and raw REST endpoints through the local bb CLI."
 metadata:
   openclaw:
@@ -119,8 +118,3 @@ bb api repositories/acme/widgets/pullrequests --paginate
 Subcommand aliases accepted: `view`→`get`, `edit`→`update`, `close`→`decline`, `checks`→`statuses`.
 
 Flag names differ — `bb pr create` uses `--description` (not `--body`) and `--destination` (not `--base`/`--dest`). When unsure, run `<command> --help`.
-
-## References
-
-- Command contracts: `docs/command-contracts.md`
-- Shared implementation rules: `docs/spec.md`
