@@ -339,7 +339,7 @@ Naming rule: prefer Bitbucket API-aligned names (`get`, `update`, `request-chang
     - `table`: `ID`, `AUTHOR`, `CREATED AT`, `CONTENT`
     - `json`: array of pull request comment objects
   - With `--comment-id`:
-    - `table`: single-row `ID`, `AUTHOR`, `CREATED AT`, `CONTENT`
+    - `table`: human-readable detail block with full comment content
     - `json`: single pull request comment object
 - Failure behavior:
   - Missing required flags -> non-zero exit
