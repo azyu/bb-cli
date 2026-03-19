@@ -887,12 +887,8 @@ fn handle_pr_comments<O: Write>(
 
         return match output {
             ListOutput::Json => print_json_object(stdout, &value, json_fields.as_deref()),
-            ListOutput::Table => write!(
-                stdout,
-                "{}",
-                render::render_pr_comments_table(std::slice::from_ref(&value))
-            )
-            .map_err(CliError::from),
+            ListOutput::Table => write!(stdout, "{}", render::render_pr_comment_detail(&value))
+                .map_err(CliError::from),
         };
     }
 

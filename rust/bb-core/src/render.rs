@@ -310,6 +310,39 @@ pub fn render_pr_comments_table(values: &[Value]) -> String {
     )
 }
 
+pub fn render_pr_comment_detail(value: &Value) -> String {
+    let mut output = format!(
+        "Comment #{}\n",
+        int_field(value, &["id"]).unwrap_or_default()
+    );
+
+    if let Some(author) = first_string_field(
+        value,
+        &[&["user", "display_name"], &["author", "display_name"]],
+    ) {
+        if !author.trim().is_empty() {
+            output.push_str(&format!("Author: {author}\n"));
+        }
+    }
+
+    if let Some(created_on) = string_field(value, &["created_on"]) {
+        if !created_on.trim().is_empty() {
+            output.push_str(&format!("Created: {}\n", relative_time_label(created_on)));
+        }
+    }
+
+    if let Some(url) = string_field(value, &["links", "html", "href"]) {
+        if !url.trim().is_empty() {
+            output.push_str(&format!("URL: {url}\n"));
+        }
+    }
+
+    output.push('\n');
+    output.push_str(string_field(value, &["content", "raw"]).unwrap_or("-"));
+    output.push('\n');
+    output
+}
+
 pub fn render_pr_statuses_table(values: &[Value]) -> String {
     let rows = values
         .iter()

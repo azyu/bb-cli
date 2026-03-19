@@ -658,6 +658,54 @@ fn pr_comment_get_json_reads_config_and_calls_server() {
 }
 
 #[test]
+fn pr_comment_get_text_outputs_full_comment_body() {
+    let server = MockServer::start();
+    let comment = server.mock(|when, then| {
+        when.method(GET)
+            .path("/2.0/repositories/acme/widgets/pullrequests/42/comments/7");
+        then.json_body(json!({
+            "id": 7,
+            "created_on": "2026-03-15T10:00:00Z",
+            "content": {
+                "raw": "line one\n\nline two with more than sixty characters to prove the body is not truncated in text mode"
+            },
+            "user": {
+                "display_name": "codex"
+            }
+        }));
+    });
+
+    let temp = tempdir().unwrap();
+    let config_path = temp.path().join("config.json");
+    write_config(&config_path, &format!("{}/2.0", server.base_url()));
+
+    let output = bb_command()
+        .args([
+            "pr",
+            "comments",
+            "--workspace",
+            "acme",
+            "--repo",
+            "widgets",
+            "42",
+            "--comment-id",
+            "7",
+        ])
+        .env("BB_CONFIG_PATH", &config_path)
+        .output()
+        .expect("command should run");
+
+    assert!(output.status.success());
+    let stdout = String::from_utf8(output.stdout).expect("stdout should be utf-8");
+    assert!(stdout.contains("Comment #7"));
+    assert!(stdout.contains("Author: codex"));
+    assert!(stdout.contains("Created:"));
+    assert!(stdout.contains("line one\n\nline two with more than sixty characters to prove the body is not truncated in text mode"));
+    assert!(!stdout.contains("ID  AUTHOR"));
+    comment.assert();
+}
+
+#[test]
 fn pr_comment_get_rejects_list_flags() {
     let output = bb_command()
         .args([
