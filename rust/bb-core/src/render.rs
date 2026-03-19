@@ -410,6 +410,9 @@ pub fn render_pipeline_table(values: &[Value]) -> String {
         .iter()
         .map(|value| {
             vec![
+                int_field(value, &["build_number"])
+                    .map(|value| value.to_string())
+                    .unwrap_or_else(|| "-".to_string()),
                 string_field(value, &["uuid"]).unwrap_or("-").to_string(),
                 pipeline_state_label(value),
                 string_field(value, &["target", "ref_name"])
@@ -418,7 +421,10 @@ pub fn render_pipeline_table(values: &[Value]) -> String {
             ]
         })
         .collect::<Vec<_>>();
-    format!("{}\n", render_table(&["UUID", "STATE", "REF"], &rows))
+    format!(
+        "{}\n",
+        render_table(&["BUILD", "UUID", "STATE", "REF"], &rows)
+    )
 }
 
 pub fn render_pipeline_steps_table(values: &[Value]) -> String {
