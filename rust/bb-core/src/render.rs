@@ -388,7 +388,10 @@ pub fn render_pipeline_table(values: &[Value]) -> String {
             ]
         })
         .collect::<Vec<_>>();
-    format!("{}\n", render_table(&["BUILD", "UUID", "STATE", "REF"], &rows))
+    format!(
+        "{}\n",
+        render_table(&["BUILD", "UUID", "STATE", "REF"], &rows)
+    )
 }
 
 pub fn render_pipeline_steps_table(values: &[Value]) -> String {

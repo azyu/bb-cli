@@ -174,7 +174,8 @@ fn pipeline_help_lists_debugging_commands() {
 fn pipeline_list_table_shows_build_number_first() {
     let server = MockServer::start();
     let pipelines = server.mock(|when, then| {
-        when.method(GET).path("/2.0/repositories/acme/widgets/pipelines");
+        when.method(GET)
+            .path("/2.0/repositories/acme/widgets/pipelines");
         then.json_body(json!({
             "values": [
                 {
@@ -552,6 +553,7 @@ fn pipeline_log_build_text_resolves_uuid_from_server() {
 
 #[test]
 fn pipeline_get_rejects_unbalanced_uuid_braces() {
+    let temp = tempdir().unwrap();
     let output = bb_command()
         .args([
             "pipeline",
@@ -565,6 +567,7 @@ fn pipeline_get_rejects_unbalanced_uuid_braces() {
             "--output",
             "json",
         ])
+        .env("BB_CONFIG_PATH", temp.path().join("missing.json"))
         .output()
         .expect("command should run");
 
@@ -578,6 +581,7 @@ fn pipeline_get_rejects_unbalanced_uuid_braces() {
 
 #[test]
 fn pipeline_get_invalid_build_emits_json_error() {
+    let temp = tempdir().unwrap();
     let output = bb_command()
         .args([
             "pipeline",
@@ -591,6 +595,7 @@ fn pipeline_get_invalid_build_emits_json_error() {
             "--output",
             "json",
         ])
+        .env("BB_CONFIG_PATH", temp.path().join("missing.json"))
         .output()
         .expect("command should run");
 
@@ -599,11 +604,15 @@ fn pipeline_get_invalid_build_emits_json_error() {
     let stdout = String::from_utf8(output.stdout).expect("stdout should be utf-8");
     let body: serde_json::Value = serde_json::from_str(&stdout).expect("stdout should be json");
     assert_eq!(body["error"]["code"], "invalid_input");
-    assert_eq!(body["error"]["message"], "--build must be a positive integer");
+    assert_eq!(
+        body["error"]["message"],
+        "--build must be a positive integer"
+    );
 }
 
 #[test]
 fn pipeline_log_rejects_unbalanced_step_braces() {
+    let temp = tempdir().unwrap();
     let output = bb_command()
         .args([
             "pipeline",
@@ -619,6 +628,7 @@ fn pipeline_log_rejects_unbalanced_step_braces() {
             "--output",
             "json",
         ])
+        .env("BB_CONFIG_PATH", temp.path().join("missing.json"))
         .output()
         .expect("command should run");
 

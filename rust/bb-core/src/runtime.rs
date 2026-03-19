@@ -25,6 +25,11 @@ use crate::{
 
 pub const STDIN_TOKEN_SENTINEL: &str = "__bb_stdin_token__";
 
+enum PipelineSelector {
+    Uuid(String, String),
+    Build(u64),
+}
+
 const REPO_LIST_JSON_FIELDS: &[&str] = &[
     "description",
     "full_name",
@@ -1123,14 +1128,9 @@ fn handle_pipeline_get<O: Write>(
     )?;
     let (workspace, repo) =
         context::resolve_repo_target(request.workspace.as_deref(), request.repo.as_deref(), true)?;
+    let selector = validate_pipeline_selector(request.uuid.as_deref(), request.build.as_deref())?;
     let client = client_from_profile(request.profile.as_deref())?;
-    let (_, pipeline_uuid) = resolve_pipeline_selector(
-        &client,
-        &workspace,
-        &repo,
-        request.uuid.as_deref(),
-        request.build.as_deref(),
-    )?;
+    let (_, pipeline_uuid) = resolve_pipeline_selector(&client, &workspace, &repo, &selector)?;
     let query = collect_query([("fields", request.fields.as_deref())]);
     let value = client.request_value(
         Method::GET,
@@ -1158,14 +1158,9 @@ fn handle_pipeline_steps<O: Write>(
     )?;
     let (workspace, repo) =
         context::resolve_repo_target(request.workspace.as_deref(), request.repo.as_deref(), true)?;
+    let selector = validate_pipeline_selector(request.uuid.as_deref(), request.build.as_deref())?;
     let client = client_from_profile(request.profile.as_deref())?;
-    let (_, pipeline_uuid) = resolve_pipeline_selector(
-        &client,
-        &workspace,
-        &repo,
-        request.uuid.as_deref(),
-        request.build.as_deref(),
-    )?;
+    let (_, pipeline_uuid) = resolve_pipeline_selector(&client, &workspace, &repo, &selector)?;
     let query = collect_query([
         ("sort", request.sort.as_deref()),
         ("fields", request.fields.as_deref()),
@@ -1191,15 +1186,11 @@ fn handle_pipeline_log<O: Write>(
     let output = parse_write_output(&request.output)?;
     let (workspace, repo) =
         context::resolve_repo_target(request.workspace.as_deref(), request.repo.as_deref(), true)?;
-    let client = client_from_profile(request.profile.as_deref())?;
-    let (pipeline_display_uuid, pipeline_uuid) = resolve_pipeline_selector(
-        &client,
-        &workspace,
-        &repo,
-        request.uuid.as_deref(),
-        request.build.as_deref(),
-    )?;
+    let selector = validate_pipeline_selector(request.uuid.as_deref(), request.build.as_deref())?;
     let (step_display_uuid, step_uuid) = normalize_uuid_arg("--step", request.step.as_deref())?;
+    let client = client_from_profile(request.profile.as_deref())?;
+    let (pipeline_display_uuid, pipeline_uuid) =
+        resolve_pipeline_selector(&client, &workspace, &repo, &selector)?;
     let log = client.request_text(
         Method::GET,
         &format!(
@@ -1809,16 +1800,16 @@ fn normalize_uuid_arg(flag_name: &str, value: Option<&str>) -> Result<(String, S
     Ok((format!("{{{inner}}}"), format!("%7B{inner}%7D")))
 }
 
-fn resolve_pipeline_selector(
-    client: &Client,
-    workspace: &str,
-    repo: &str,
+fn validate_pipeline_selector(
     uuid: Option<&str>,
     build: Option<&str>,
-) -> Result<(String, String), CliError> {
+) -> Result<PipelineSelector, CliError> {
     match (uuid, build) {
-        (Some(uuid), None) => normalize_uuid_arg("--uuid", Some(uuid)),
-        (None, Some(build)) => resolve_pipeline_build_arg(client, workspace, repo, build),
+        (Some(uuid), None) => {
+            let (display_uuid, encoded_uuid) = normalize_uuid_arg("--uuid", Some(uuid))?;
+            Ok(PipelineSelector::Uuid(display_uuid, encoded_uuid))
+        }
+        (None, Some(build)) => Ok(PipelineSelector::Build(parse_pipeline_build_arg(build)?)),
         (None, None) => Err(CliError::InvalidInput(
             "pipeline identifier is required: pass --uuid or --build".to_string(),
         )),
@@ -1828,12 +1819,23 @@ fn resolve_pipeline_selector(
     }
 }
 
-fn resolve_pipeline_build_arg(
+fn resolve_pipeline_selector(
     client: &Client,
     workspace: &str,
     repo: &str,
-    build: &str,
+    selector: &PipelineSelector,
 ) -> Result<(String, String), CliError> {
+    match selector {
+        PipelineSelector::Uuid(display_uuid, encoded_uuid) => {
+            Ok((display_uuid.clone(), encoded_uuid.clone()))
+        }
+        PipelineSelector::Build(build) => {
+            resolve_pipeline_build_lookup(client, workspace, repo, *build)
+        }
+    }
+}
+
+fn parse_pipeline_build_arg(build: &str) -> Result<u64, CliError> {
     let build = required_string("--build is required", Some(build))?;
     let build = build
         .parse::<u64>()
@@ -1843,13 +1845,22 @@ fn resolve_pipeline_build_arg(
             "--build must be a positive integer".to_string(),
         ));
     }
+    Ok(build)
+}
 
+fn resolve_pipeline_build_lookup(
+    client: &Client,
+    workspace: &str,
+    repo: &str,
+    build: u64,
+) -> Result<(String, String), CliError> {
     let path = format!("/repositories/{workspace}/{repo}/pipelines");
     let query = collect_query([("q", Some(&format!("build_number={build}")[..]))]);
     let values = client.get_page(&path, &query)?.0;
-    let value = values.into_iter().next().ok_or_else(|| {
-        CliError::InvalidInput(format!("no pipeline found for --build {build}"))
-    })?;
+    let value = values
+        .into_iter()
+        .next()
+        .ok_or_else(|| CliError::InvalidInput(format!("no pipeline found for --build {build}")))?;
     let uuid = value
         .get("uuid")
         .and_then(Value::as_str)
