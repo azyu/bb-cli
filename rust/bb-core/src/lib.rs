@@ -66,6 +66,7 @@ pub struct AuthLogoutRequest {
 #[derive(Debug, Clone)]
 pub struct ApiRequest {
     pub method: String,
+    pub input: Option<String>,
     pub paginate: bool,
     pub profile: Option<String>,
     pub q: Option<String>,
@@ -200,6 +201,7 @@ pub struct PrCommentRequest {
     pub repo: Option<String>,
     pub id: Option<String>,
     pub content: Option<String>,
+    pub parent: Option<String>,
     pub profile: Option<String>,
     pub output: String,
 }

@@ -152,6 +152,9 @@ pub struct AuthLogoutArgs {
 pub struct ApiArgs {
     #[arg(long, default_value = "GET")]
     pub method: String,
+    /// Request body file ("-" for stdin)
+    #[arg(long)]
+    pub input: Option<String>,
     #[arg(long)]
     pub paginate: bool,
     #[arg(long)]
@@ -389,6 +392,9 @@ pub struct PrCommentArgs {
     pub pr_id: Option<String>,
     #[arg(long)]
     pub content: Option<String>,
+    /// Parent comment ID for replies
+    #[arg(long)]
+    pub parent: Option<String>,
     #[arg(long)]
     pub profile: Option<String>,
     #[arg(long, default_value = "text")]
@@ -767,6 +773,7 @@ fn map_request(cli: Cli) -> Request {
         }),
         Some(Commands::Api(args)) => Request::Api(ApiRequest {
             method: args.method,
+            input: args.input,
             paginate: args.paginate,
             profile: args.profile,
             q: args.q,
@@ -886,6 +893,7 @@ fn map_request(cli: Cli) -> Request {
                 repo: args.repo,
                 id: resolve_pr_id(args.id, args.pr_id),
                 content: args.content,
+                parent: args.parent,
                 profile: args.profile,
                 output: args.output,
             }),
@@ -1083,6 +1091,29 @@ mod tests {
     fn version_flag_maps_to_version_request() {
         let request = parse_from(["bb", "--version"]).expect("parse should succeed");
         assert!(matches!(request, Request::Version));
+    }
+
+    #[test]
+    fn api_maps_input_flag() {
+        let request = parse_from([
+            "bb",
+            "api",
+            "--method",
+            "POST",
+            "--input",
+            "-",
+            "repositories/acme/widgets/pullrequests/42/comments",
+        ])
+        .expect("parse should succeed");
+        let Request::Api(request) = request else {
+            panic!("expected api request");
+        };
+        assert_eq!(request.method, "POST");
+        assert_eq!(request.input.as_deref(), Some("-"));
+        assert_eq!(
+            request.endpoint.as_deref(),
+            Some("repositories/acme/widgets/pullrequests/42/comments")
+        );
     }
 
     #[test]
