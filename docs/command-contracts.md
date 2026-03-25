@@ -71,6 +71,7 @@ This document is the contract baseline for `bb` command behavior.
 - Purpose: Direct REST call escape hatch for unsupported wrappers.
 - Optional flags:
   - `--method` (default: `GET`)
+  - `--input <path>` (`-` reads the request body JSON from stdin)
   - `--paginate` (follow `next` links and merge `values`)
   - `--profile`
   - `--q`, `--sort`, `--fields`
@@ -78,6 +79,7 @@ This document is the contract baseline for `bb` command behavior.
   - JSON
 - Failure behavior:
   - API error -> non-zero exit with status/body summary
+  - `--paginate` with `--input` -> non-zero exit
   - Missing endpoint arg -> non-zero exit with usage
 
 ## `bb repo`
@@ -310,6 +312,7 @@ Naming rule: prefer Bitbucket API-aligned names (`get`, `update`, `request-chang
   - pull request ID via positional `<id>` or `--id`
   - `--content`
 - Optional flags:
+  - `--parent` (reply to an existing comment ID)
   - `--profile`
   - `--output` (`text` default, `json`)
 - Output:
@@ -318,6 +321,7 @@ Naming rule: prefer Bitbucket API-aligned names (`get`, `update`, `request-chang
 - Failure behavior:
   - Missing required flags -> non-zero exit
   - Missing `--content` -> non-zero exit
+  - Non-numeric `--parent` value -> non-zero exit
   - Non-numeric pull request ID value -> non-zero exit
   - Passing both `<id>` and `--id` -> non-zero exit
   - Unsupported output -> non-zero exit

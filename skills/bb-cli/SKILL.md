@@ -26,7 +26,9 @@ bb <command> <subcommand> [flags]
 - For write operations, do not guess IDs, branch names, or target repos. Resolve them first.
 - `bb pr create` uses `--description` and `--destination`; do not substitute `--body` or `--dest`.
 - Use `bb api` when the wrapped command surface does not cover the operation you need.
-- `bb api` is JSON-only.
+- `bb api` is JSON-only and accepts request bodies via `--input <file>` or `--input -` for stdin.
+- Do not combine `bb api --input` with `--paginate`; paginated mode is read-only.
+- Use `bb pr comment --parent <comment-id>` for PR comment replies.
 - Wiki commands use the repo's wiki Git remote, not a REST endpoint.
 - Runtime failures in JSON mode return JSON error envelopes; parse/help failures stay text.
 
@@ -77,7 +79,9 @@ bb pr --help
 bb pipeline --help
 
 # Exact flags and positional arguments
+bb api --help
 bb pr create --help
+bb pr comment --help
 bb pr get --help
 bb pr comments --help
 bb pipeline log --help
@@ -105,12 +109,15 @@ bb wiki get --workspace acme --repo widgets --page Home.md
 
 # Write operations
 bb pr create --workspace acme --repo widgets --title "Add widget support" --source feature/widgets --destination main
+bb pr comment 123 --workspace acme --repo widgets --content "Reply text" --parent 456
 bb pr create --workspace acme --repo widgets --title "Add widget support" --source feature/widgets --destination main --description "$(cat ./pr-body.md)"
 bb issue create --workspace acme --repo widgets --title "Broken widget" --kind bug --priority major --output json
 bb wiki put --workspace acme --repo widgets --page Home.md --file ./docs/home.md
 
 # Escape hatch
 bb api repositories/acme/widgets/pullrequests --paginate
+bb api --method POST --input ./body.json repositories/acme/widgets/pullrequests/123/comments
+printf '{"content":{"raw":"Reply text"}}' | bb api --method POST --input - repositories/acme/widgets/pullrequests/123/comments
 ```
 
 ## GitHub CLI Compatibility

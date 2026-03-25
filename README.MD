@@ -73,7 +73,9 @@ Inside a Bitbucket repository, `bb` can infer `--workspace` and `--repo` from `r
 bb pr list
 bb pr comments 123
 bb pr comments 123 --comment-id 456 --output json
+bb pr comment 123 --content "Reply text" --parent 456
 bb pr create --title "My PR" --source feature --destination main
+bb api --method POST --input ./body.json repositories/acme/widgets/pullrequests/123/comments
 bb pipeline list
 bb pipeline get --uuid "{pipeline-uuid}"
 bb pipeline get --build 123

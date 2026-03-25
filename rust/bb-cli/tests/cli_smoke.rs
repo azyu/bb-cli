@@ -1,7 +1,7 @@
 use std::fs;
 use std::process::Command;
 
-use httpmock::Method::{DELETE, GET};
+use httpmock::Method::{DELETE, GET, POST};
 use httpmock::MockServer;
 use serde_json::json;
 use tempfile::tempdir;
@@ -154,6 +154,128 @@ fn repo_list_json_fields_projects_requested_keys() {
     assert_eq!(body[0]["full_name"], "acme/one");
     assert!(body[0].get("name").is_none());
     repos.assert();
+}
+
+#[test]
+fn api_help_includes_input_flag() {
+    let output = bb_command()
+        .args(["api", "--help"])
+        .output()
+        .expect("command should run");
+    assert!(output.status.success());
+
+    let stdout = String::from_utf8(output.stdout).expect("stdout should be utf-8");
+    assert!(stdout.contains("--input <INPUT>"));
+}
+
+#[test]
+fn api_post_with_input_file_sends_json_body() {
+    let server = MockServer::start();
+    let api = server.mock(|when, then| {
+        when.method(POST)
+            .path("/2.0/repositories/acme/widgets/pullrequests/42/comments")
+            .json_body(json!({
+                "content": {
+                    "raw": "reply body"
+                }
+            }));
+        then.json_body(json!({
+            "id": 91
+        }));
+    });
+
+    let temp = tempdir().unwrap();
+    let config_path = temp.path().join("config.json");
+    let body_path = temp.path().join("body.json");
+    write_config(&config_path, &format!("{}/2.0", server.base_url()));
+    fs::write(&body_path, r#"{"content":{"raw":"reply body"}}"#).unwrap();
+
+    let output = bb_command()
+        .args([
+            "api",
+            "--method",
+            "POST",
+            "--input",
+            body_path.to_str().expect("path should be utf-8"),
+            "repositories/acme/widgets/pullrequests/42/comments",
+        ])
+        .env("BB_CONFIG_PATH", &config_path)
+        .output()
+        .expect("command should run");
+
+    assert!(output.status.success());
+    let stdout = String::from_utf8(output.stdout).expect("stdout should be utf-8");
+    let body: serde_json::Value = serde_json::from_str(&stdout).expect("stdout should be json");
+    assert_eq!(body["id"], 91);
+    api.assert();
+}
+
+#[test]
+fn api_rejects_paginate_with_input() {
+    let temp = tempdir().unwrap();
+    let config_path = temp.path().join("config.json");
+    let body_path = temp.path().join("body.json");
+    write_config(&config_path, "https://api.bitbucket.org/2.0");
+    fs::write(&body_path, r#"{"content":{"raw":"reply body"}}"#).unwrap();
+
+    let output = bb_command()
+        .args([
+            "api",
+            "--method",
+            "POST",
+            "--input",
+            body_path.to_str().expect("path should be utf-8"),
+            "--paginate",
+            "repositories/acme/widgets/pullrequests/42/comments",
+        ])
+        .env("BB_CONFIG_PATH", &config_path)
+        .output()
+        .expect("command should run");
+
+    assert!(!output.status.success());
+    assert!(output.stderr.is_empty());
+    let stdout = String::from_utf8(output.stdout).expect("stdout should be utf-8");
+    let body: serde_json::Value = serde_json::from_str(&stdout).expect("stdout should be json");
+    assert_eq!(body["error"]["code"], "invalid_input");
+    assert_eq!(
+        body["error"]["message"],
+        "--paginate cannot be combined with --input"
+    );
+}
+
+#[test]
+fn api_invalid_input_json_emits_error() {
+    let server = MockServer::start();
+    let temp = tempdir().unwrap();
+    let config_path = temp.path().join("config.json");
+    let body_path = temp.path().join("body.json");
+    write_config(&config_path, &format!("{}/2.0", server.base_url()));
+    fs::write(&body_path, "{not-json").unwrap();
+
+    let output = bb_command()
+        .args([
+            "api",
+            "--method",
+            "POST",
+            "--input",
+            body_path.to_str().expect("path should be utf-8"),
+            "repositories/acme/widgets/pullrequests/42/comments",
+        ])
+        .env("BB_CONFIG_PATH", &config_path)
+        .output()
+        .expect("command should run");
+
+    assert!(!output.status.success());
+    assert!(output.stderr.is_empty());
+    let stdout = String::from_utf8(output.stdout).expect("stdout should be utf-8");
+    let body: serde_json::Value = serde_json::from_str(&stdout).expect("stdout should be json");
+    assert_eq!(body["error"]["code"], "invalid_input");
+    assert!(
+        body["error"]["message"]
+            .as_str()
+            .expect("message should be a string")
+            .contains("invalid JSON body")
+    );
 }
 
 #[test]
@@ -689,6 +811,18 @@ fn pr_comments_help_includes_positional_id() {
 }
 
 #[test]
+fn pr_comment_help_includes_parent_flag() {
+    let output = bb_command()
+        .args(["pr", "comment", "--help"])
+        .output()
+        .expect("command should run");
+    assert!(output.status.success());
+
+    let stdout = String::from_utf8(output.stdout).expect("stdout should be utf-8");
+    assert!(stdout.contains("--parent <PARENT>"));
+}
+
+#[test]
 fn pr_get_json_reads_config_and_calls_server() {
     let server = MockServer::start();
     let pr = server.mock(|when, then| {
@@ -948,6 +1082,96 @@ fn pr_comment_get_text_outputs_full_comment_body() {
     assert!(stdout.contains("line one\n\nline two with more than sixty characters to prove the body is not truncated in text mode"));
     assert!(!stdout.contains("ID  AUTHOR"));
     comment.assert();
+}
+
+#[test]
+fn pr_comment_with_parent_sends_reply_body() {
+    let server = MockServer::start();
+    let comment = server.mock(|when, then| {
+        when.method(POST)
+            .path("/2.0/repositories/acme/widgets/pullrequests/42/comments")
+            .json_body(json!({
+                "content": {
+                    "raw": "reply body"
+                },
+                "parent": {
+                    "id": 7
+                }
+            }));
+        then.json_body(json!({
+            "id": 9,
+            "links": {
+                "html": {
+                    "href": "https://bitbucket.example/pr/42/comments/9"
+                }
+            }
+        }));
+    });
+
+    let temp = tempdir().unwrap();
+    let config_path = temp.path().join("config.json");
+    write_config(&config_path, &format!("{}/2.0", server.base_url()));
+
+    let output = bb_command()
+        .args([
+            "pr",
+            "comment",
+            "--workspace",
+            "acme",
+            "--repo",
+            "widgets",
+            "42",
+            "--content",
+            "reply body",
+            "--parent",
+            "7",
+        ])
+        .env("BB_CONFIG_PATH", &config_path)
+        .output()
+        .expect("command should run");
+
+    assert!(output.status.success());
+    let stdout = String::from_utf8(output.stdout).expect("stdout should be utf-8");
+    assert!(stdout.contains("Created comment #9 on PR #42"));
+    comment.assert();
+}
+
+#[test]
+fn pr_comment_invalid_parent_emits_json_error() {
+    let server = MockServer::start();
+    let temp = tempdir().unwrap();
+    let config_path = temp.path().join("config.json");
+    write_config(&config_path, &format!("{}/2.0", server.base_url()));
+
+    let output = bb_command()
+        .args([
+            "pr",
+            "comment",
+            "--workspace",
+            "acme",
+            "--repo",
+            "widgets",
+            "42",
+            "--content",
+            "reply body",
+            "--parent",
+            "abc",
+            "--output",
+            "json",
+        ])
+        .env("BB_CONFIG_PATH", &config_path)
+        .output()
+        .expect("command should run");
+
+    assert!(!output.status.success());
+    assert!(output.stderr.is_empty());
+    let stdout = String::from_utf8(output.stdout).expect("stdout should be utf-8");
+    let body: serde_json::Value = serde_json::from_str(&stdout).expect("stdout should be json");
+    assert_eq!(body["error"]["code"], "invalid_input");
+    assert_eq!(
+        body["error"]["message"],
+        "--parent must be a numeric comment ID"
+    );
 }
 
 #[test]

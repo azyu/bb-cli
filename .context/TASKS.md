@@ -38,5 +38,6 @@
 - [x] Harden `skills/bb-cli` write-operation guidance to prevent invalid `bb pr create` flag usage - owner: agent
 - [x] Add `bb pr comments --comment-id` single-comment lookup and align docs/skill guidance - owner: agent
 - [x] Show full single-comment output for `bb pr comments --comment-id` in human mode - owner: agent
+- [x] Add `bb pr comment --parent` replies and `bb api --input` request bodies - owner: agent
 - [ ] Evaluate `bb pr checkout` local Git workflow for a future follow-up - owner: agent
 - [ ] Evaluate phase 2 agent-first extensions (`--describe` or schema introspection, `--dry-run`, separate automation surface if needed) - owner: agent
