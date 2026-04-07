@@ -334,7 +334,7 @@ Naming rule: prefer Bitbucket API-aligned names (`get`, `update`, `request-chang
 - Optional flags:
   - `--comment-id` (single comment lookup within the selected pull request)
   - `--output` (`table` default, `json`)
-  - `--all`
+  - `--all` (follow pagination and fetch all comment pages; default is the first page only)
   - `--profile`
   - `--q`, `--sort`, `--fields`
   - `--json-fields` (requires `--output json`)

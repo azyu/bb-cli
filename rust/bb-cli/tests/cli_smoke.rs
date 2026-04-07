@@ -808,6 +808,7 @@ fn pr_comments_help_includes_positional_id() {
     assert!(stdout.contains("[ID]"));
     assert!(stdout.contains("--id <ID>"));
     assert!(stdout.contains("--comment-id <COMMENT_ID>"));
+    assert!(stdout.contains("Fetch all comment pages instead of the first page only"));
 }
 
 #[test]

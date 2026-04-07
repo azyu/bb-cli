@@ -415,7 +415,7 @@ pub struct PrCommentsArgs {
     pub comment_id: Option<String>,
     #[arg(long, default_value = "table")]
     pub output: String,
-    #[arg(long)]
+    #[arg(long, help = "Fetch all comment pages instead of the first page only")]
     pub all: bool,
     #[arg(long)]
     pub profile: Option<String>,
