@@ -19,7 +19,7 @@
 - Go entrypoints and Go-only workflows are removed after Rust verification passes.
 
 ## Current Phase
-- Phase: Pipeline list newest-first default
+- Phase: v0.2.9 release
 - Owner: Main
-- Tracking: [GitHub PR #48](https://github.com/azyu/bb-cli/pull/48), closing [Issue #47](https://github.com/azyu/bb-cli/issues/47) on merge
-- Notes: Completed on `fix/47-pipeline-newest-first`: wrapper default and explicit-sort override coverage pass, help documents newest-first and the typical 10-item first page, all 131 workspace tests pass, and PR #48 is open for review.
+- Tracking: [GitHub Issue #49](https://github.com/azyu/bb-cli/issues/49)
+- Notes: PR #48 is merged to `main` as `cc8c2ee`. Release target is `v0.2.9`; publish from merged main, verify five platform archives/checksums, and allow the release workflow to synchronize the workspace version and Homebrew formula.
