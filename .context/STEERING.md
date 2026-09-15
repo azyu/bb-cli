@@ -19,7 +19,7 @@
 - Go entrypoints and Go-only workflows are removed after Rust verification passes.
 
 ## Current Phase
-- Phase: v0.2.9 release
+- Phase: v0.2.9 released
 - Owner: Main
-- Tracking: [GitHub Issue #49](https://github.com/azyu/bb-cli/issues/49)
-- Notes: PR #48 is merged to `main` as `cc8c2ee`. Release target is `v0.2.9`; publish from merged main, verify five platform archives/checksums, and allow the release workflow to synchronize the workspace version and Homebrew formula.
+- Tracking: [GitHub Issue #49](https://github.com/azyu/bb-cli/issues/49) (completed)
+- Notes: `v0.2.9` is published from merged main. Release Build run `34924684819` succeeded, all five platform archives plus `checksums.txt` are uploaded, and the workflow synchronized the workspace version and Homebrew formula.
