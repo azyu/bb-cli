@@ -22,4 +22,4 @@
 - Phase: v0.2.9 released
 - Owner: Main
 - Tracking: [GitHub Issue #49](https://github.com/azyu/bb-cli/issues/49) (completed)
-- Notes: `v0.2.9` is published from merged main. Release Build run `34924684819` succeeded, all five platform archives plus `checksums.txt` are uploaded, and the workflow synchronized the workspace version and Homebrew formula.
+- Notes: `v0.2.9` is published from merged main. Release Build run `34924684819` succeeded, all five platform archives plus `checksums.txt` are uploaded, `sha256sum -c checksums.txt` passed for every archive, native macOS ARM64 `bb version` reports `0.2.9+82d4253`, and the workflow synchronized the workspace version and Homebrew formula.
