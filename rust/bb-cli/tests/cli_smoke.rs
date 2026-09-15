@@ -490,7 +490,7 @@ fn pipeline_help_lists_debugging_commands() {
 }
 
 #[test]
-fn pipeline_list_help_documents_oldest_first_sort_default() {
+fn pipeline_list_help_documents_newest_first_sort_default() {
     let output = bb_command()
         .args(["pipeline", "list", "--help"])
         .output()
@@ -498,8 +498,11 @@ fn pipeline_list_help_documents_oldest_first_sort_default() {
     assert!(output.status.success());
 
     let stdout = String::from_utf8(output.stdout).expect("stdout should be utf-8");
-    assert!(stdout.contains("oldest-first"));
-    assert!(stdout.contains("--sort=-created_on"));
+    assert!(stdout.contains("newest-first"));
+    assert!(stdout.contains("-created_on"));
+    assert!(stdout.contains("Fetch all pages"));
+    assert!(stdout.contains("first API page"));
+    assert!(stdout.contains("typically 10 pipelines"));
 }
 
 #[test]
@@ -507,7 +510,8 @@ fn pipeline_list_table_shows_build_number_first() {
     let server = MockServer::start();
     let pipelines = server.mock(|when, then| {
         when.method(GET)
-            .path("/2.0/repositories/acme/widgets/pipelines");
+            .path("/2.0/repositories/acme/widgets/pipelines")
+            .query_param("sort", "-created_on");
         then.json_body(json!({
             "values": [
                 {
@@ -551,7 +555,8 @@ fn pipeline_list_branch_sends_target_branch_query_param() {
     let pipelines = server.mock(|when, then| {
         when.method(GET)
             .path("/2.0/repositories/acme/widgets/pipelines")
-            .query_param("target.branch", "feature/x");
+            .query_param("target.branch", "feature/x")
+            .query_param("sort", "created_on");
         then.json_body(json!({ "values": [] }));
     });
 
@@ -569,6 +574,7 @@ fn pipeline_list_branch_sends_target_branch_query_param() {
             "widgets",
             "--branch",
             "feature/x",
+            "--sort=created_on",
             "--output",
             "json",
         ])
