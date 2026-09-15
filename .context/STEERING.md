@@ -21,5 +21,5 @@
 ## Current Phase
 - Phase: Pipeline list newest-first default
 - Owner: Main
-- Tracking: [GitHub Issue #47](https://github.com/azyu/bb-cli/issues/47)
-- Notes: Completed and committed on `fix/47-pipeline-newest-first`: wrapper default and explicit-sort override coverage pass, help documents newest-first and the typical 10-item first page, all 131 workspace tests pass, and issue #47 remains open until merge.
+- Tracking: [GitHub PR #48](https://github.com/azyu/bb-cli/pull/48), closing [Issue #47](https://github.com/azyu/bb-cli/issues/47) on merge
+- Notes: Completed on `fix/47-pipeline-newest-first`: wrapper default and explicit-sort override coverage pass, help documents newest-first and the typical 10-item first page, all 131 workspace tests pass, and PR #48 is open for review.
