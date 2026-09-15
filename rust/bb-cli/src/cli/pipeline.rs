@@ -26,7 +26,10 @@ pub(super) struct PipelineListArgs {
     pub(super) repo: Option<String>,
     #[arg(long, default_value = "table")]
     pub(super) output: String,
-    #[arg(long)]
+    #[arg(
+        long,
+        help = "Fetch all pages; by default only the first API page (typically 10 pipelines) is returned"
+    )]
     pub(super) all: bool,
     #[arg(long)]
     pub(super) profile: Option<String>,
@@ -34,7 +37,8 @@ pub(super) struct PipelineListArgs {
     pub(super) branch: Option<String>,
     #[arg(
         long,
-        help = "Sort expression passed to the API; when unset the API is observed to return oldest-first, so pass --sort=-created_on for the most recent builds"
+        default_value = "-created_on",
+        help = "Sort expression passed to the API (default: newest-first by creation time)"
     )]
     pub(super) sort: Option<String>,
     #[arg(long)]

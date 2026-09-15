@@ -34,7 +34,8 @@ bb version
 - `bb api` has no `--output` flag. Passing one is a clap argument error on stderr; if you redirect stderr away you will see an empty result and misread it as empty data. Do not suppress stderr when probing flags.
 - Do not combine `bb api --input` with `--paginate`; paginated mode is read-only.
 - `bb pipeline get`/`steps`/`log` select a pipeline via a positional selector (`bb pipeline get 14588`, `bb pipeline log 14588 --step "{uuid}"`) — numeric means build number, brace-wrapped means UUID — or via the `--build <number>`/`--uuid "{uuid}"` flags; passing the positional together with either flag is an error. Braces are optional for `--step`/`--uuid`, but required on a positional selector — that is what distinguishes a UUID from a build number.
-- `bb pipeline list` returns the API default order (oldest first) and only the first page unless `--all`. For recent builds always pass `--sort=-created_on`.
+- `bb pipeline list` returns the newest pipelines first by default (`sort=-created_on`) and only the first API page (typically 10 pipelines) unless `--all`. Use `--all` when the complete history is required; an explicit `--sort` overrides the default.
+- Raw `bb api repositories/<workspace>/<repo>/pipelines` calls do not inherit that default. Pass `--sort=-created_on` there when inspecting recent pipelines, and `--paginate` when the full history is required.
 - `bb pipeline list` filters by branch with `--branch <name>` (sent as the `target.branch` query parameter); the pipelines endpoint ignores `q`.
 - Use `bb pr comment --parent <comment-id>` for PR comment replies.
 - Wiki commands use the repo's wiki Git remote, not a REST endpoint.
@@ -140,10 +141,10 @@ printf '{"content":{"raw":"Reply text"}}' | bb api --method POST --input - repos
 
 ```bash
 # 1. Recent pipelines for a branch
-bb pipeline list --branch feature/x --sort=-created_on --output json
+bb pipeline list --branch feature/x --output json
 
-# 1b. Recent pipelines regardless of branch (default order is oldest-first — always sort)
-bb pipeline list --sort=-created_on --output json
+# 1b. Recent pipelines regardless of branch
+bb pipeline list --output json
 
 # 2. Steps for a build — find the failed step's UUID
 bb pipeline steps 14588 --output json

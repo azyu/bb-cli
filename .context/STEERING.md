@@ -19,7 +19,7 @@
 - Go entrypoints and Go-only workflows are removed after Rust verification passes.
 
 ## Current Phase
-- Phase: v0.2.8 released
+- Phase: Pipeline list newest-first default
 - Owner: Main
-- Tracking: [GitHub PR #44](https://github.com/azyu/bb-cli/pull/44)
-- Notes: Release v0.2.8 was published from commit `efbde3c`. All five platform archives and `checksums.txt` are available, published checksums pass, the macOS ARM64 artifact reports `0.2.8+efbde3c`, and the Homebrew formula is synchronized with matching sha256 digests. 131 workspace tests and the formatting check pass. The release contents are the `bb api --input -` stdin fix (#40), the CLI/runtime module refactor (#38), the Actions Node 24 migration (#42), and the agent-facing docs sync (#44).
+- Tracking: [GitHub PR #48](https://github.com/azyu/bb-cli/pull/48), closing [Issue #47](https://github.com/azyu/bb-cli/issues/47) on merge
+- Notes: Completed on `fix/47-pipeline-newest-first`: wrapper default and explicit-sort override coverage pass, help documents newest-first and the typical 10-item first page, all 131 workspace tests pass, and PR #48 is open for review.
