@@ -3,7 +3,7 @@ use std::io::{BufRead, Write};
 use crate::config;
 use crate::error::CliError;
 use crate::render;
-use crate::{AuthLoginRequest, AuthRequest, AuthStatusRequest};
+use crate::{AuthLoginRequest, AuthRequest, AuthStatusRequest, AuthSwitchRequest};
 
 use super::STDIN_TOKEN_SENTINEL;
 
@@ -17,7 +17,53 @@ pub(super) fn handle_auth<R: BufRead, O: Write>(
         AuthRequest::Login(request) => handle_auth_login(request, stdin, stdout),
         AuthRequest::Status(request) => handle_auth_status(request, stdout),
         AuthRequest::Logout(request) => handle_auth_logout(request, stdout),
+        AuthRequest::Switch(request) => handle_auth_switch(request, stdout),
+        AuthRequest::List => handle_auth_list(stdout),
     }
+}
+
+fn handle_auth_switch<O: Write>(
+    request: &AuthSwitchRequest,
+    stdout: &mut O,
+) -> Result<(), CliError> {
+    let mut config = config::load()?;
+    let switched = config.switch_profile(&request.profile)?;
+    config::save(&config)?;
+
+    writeln!(stdout, "active profile: {switched:?}")?;
+    Ok(())
+}
+
+fn handle_auth_list<O: Write>(stdout: &mut O) -> Result<(), CliError> {
+    let config = config::load()?;
+    if config.profiles.is_empty() {
+        return Err(CliError::NotLoggedIn);
+    }
+
+    let rows: Vec<(&String, String)> = config
+        .profiles
+        .iter()
+        .map(|(name, profile)| {
+            let auth = if profile.username.trim().is_empty() {
+                "bearer token".to_string()
+            } else {
+                format!("basic ({})", profile.username.trim())
+            };
+            (name, auth)
+        })
+        .collect();
+    let name_width = rows.iter().map(|(name, _)| name.len()).max().unwrap_or(0);
+    let auth_width = rows.iter().map(|(_, auth)| auth.len()).max().unwrap_or(0);
+
+    for (name, auth) in rows {
+        let marker = if *name == config.current { "*" } else { " " };
+        let base_url = &config.profiles[name].base_url;
+        writeln!(
+            stdout,
+            "{marker} {name:name_width$}  {auth:auth_width$}  {base_url}"
+        )?;
+    }
+    Ok(())
 }
 
 fn handle_auth_login<R: BufRead, O: Write>(

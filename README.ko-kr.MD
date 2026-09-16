@@ -65,6 +65,18 @@ bb auth login --username "<bitbucket-email>" --token "<your-token>"
 bb auth status
 ```
 
+> [!TIP]
+> **계정이 여러 개인 경우.** 계정마다 프로필 이름을 붙여 두면 전환하거나 명령 단위로
+> 활성 프로필을 덮어쓸 수 있습니다.
+> ```bash
+> bb auth login --profile work     --username "<업무-이메일>" --token "<token>"
+> bb auth login --profile personal --username "<개인-이메일>" --token "<token>"
+>
+> bb auth list                 # 저장된 프로필 목록, 활성 프로필은 * 표시
+> bb auth switch --profile work   # 활성 프로필 변경, 토큰 재입력 불필요
+> bb pr list --profile personal   # 이번 명령만 덮어쓰기, 활성 프로필은 그대로
+> ```
+
 ### 3. 자주 쓰는 명령 실행
 
 Bitbucket 저장소 안에서는 `remote.origin.url`에서 `--workspace`와 `--repo`를 자동으로 추론할 수 있습니다.
@@ -92,7 +104,7 @@ bb completion zsh
 
 | 그룹 | 서브커맨드 |
 |------|-----------|
-| `bb auth` | `login`, `status`, `logout` |
+| `bb auth` | `login`, `status`, `list`, `switch`, `logout` |
 | `bb repo` | `list` |
 | `bb pr` | `list`, `get`, `create`, `update`, `merge`, `approve`, `unapprove`, `request-changes`, `remove-request-changes`, `decline`, `comment`, `comment-update`, `comments`, `diff`, `diffstat`, `statuses`, `activity` |
 | `bb pipeline` | `list`, `get`, `steps`, `log`, `run` |

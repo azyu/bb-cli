@@ -19,7 +19,8 @@
 - Go entrypoints and Go-only workflows are removed after Rust verification passes.
 
 ## Current Phase
-- Phase: v0.2.9 released
+- Phase: post-v0.2.9 — multi-account auth ergonomics
 - Owner: Main
-- Tracking: [GitHub Issue #49](https://github.com/azyu/bb-cli/issues/49) (completed)
-- Notes: `v0.2.9` is published from merged main. Release Build run `34924684819` succeeded, all five platform archives plus `checksums.txt` are uploaded, `sha256sum -c checksums.txt` passed for every archive, native macOS ARM64 `bb version` reports `0.2.9+82d4253`, and the workflow synchronized the workspace version and Homebrew formula.
+- Tracking: [GitHub Issue #50](https://github.com/azyu/bb-cli/issues/50) — `auth switch` / `auth list` for multi-account use
+- Notes: Named profiles, an active `current`, and per-command `--profile` already existed; the gap was changing the active profile without re-supplying a token, and seeing which profiles exist. Prior art (`gh` 2.101, `glab`, `tea`, `aws`, `kubectl`) shows forge CLIs persist an active account plus a per-command override and expose no env var for selecting a stored account, so no `BB_PROFILE` was added — that also keeps `docs/spec.md` env-precedence rule intact.
+- Previous: v0.2.9 release ([GitHub Issue #49](https://github.com/azyu/bb-cli/issues/49), completed): `v0.2.9` is published from merged main. Release Build run `34924684819` succeeded, all five platform archives plus `checksums.txt` are uploaded, `sha256sum -c checksums.txt` passed for every archive, native macOS ARM64 `bb version` reports `0.2.9+82d4253`, and the workflow synchronized the workspace version and Homebrew formula.

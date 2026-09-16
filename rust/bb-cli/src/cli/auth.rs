@@ -1,4 +1,6 @@
-use bb_core::{AuthLoginRequest, AuthLogoutRequest, AuthRequest, AuthStatusRequest, Request};
+use bb_core::{
+    AuthLoginRequest, AuthLogoutRequest, AuthRequest, AuthStatusRequest, AuthSwitchRequest, Request,
+};
 use clap::{Args, Subcommand};
 
 #[derive(Debug, Subcommand)]
@@ -9,6 +11,10 @@ pub(super) enum AuthCommands {
     Status(AuthStatusArgs),
     /// Remove a saved authentication profile
     Logout(AuthLogoutArgs),
+    /// Set the active authentication profile
+    Switch(AuthSwitchArgs),
+    /// List saved authentication profiles
+    List,
 }
 
 #[derive(Debug, Args)]
@@ -44,6 +50,13 @@ pub(super) struct AuthLogoutArgs {
     pub(super) profile: Option<String>,
 }
 
+#[derive(Debug, Args)]
+pub(super) struct AuthSwitchArgs {
+    #[arg(long)]
+    /// Authentication profile name to make active
+    pub(super) profile: String,
+}
+
 pub(super) fn map_request(command: Option<AuthCommands>) -> Request {
     Request::Auth(match command {
         None => AuthRequest::Help,
@@ -60,5 +73,9 @@ pub(super) fn map_request(command: Option<AuthCommands>) -> Request {
         Some(AuthCommands::Logout(args)) => AuthRequest::Logout(AuthLogoutRequest {
             profile: args.profile,
         }),
+        Some(AuthCommands::Switch(args)) => AuthRequest::Switch(AuthSwitchRequest {
+            profile: args.profile,
+        }),
+        Some(AuthCommands::List) => AuthRequest::List,
     })
 }

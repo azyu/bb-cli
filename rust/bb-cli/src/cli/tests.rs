@@ -45,6 +45,24 @@ fn bare_token_is_normalized_to_stdin_sentinel() {
 }
 
 #[test]
+fn auth_switch_requires_profile_and_list_takes_none() {
+    let request =
+        parse_from(["bb", "auth", "switch", "--profile", "work"]).expect("parse should succeed");
+    let Request::Auth(AuthRequest::Switch(request)) = request else {
+        panic!("expected auth switch");
+    };
+    assert_eq!(request.profile, "work");
+
+    assert!(
+        parse_from(["bb", "auth", "switch"]).is_err(),
+        "switch without --profile must be a parse error"
+    );
+
+    let request = parse_from(["bb", "auth", "list"]).expect("parse should succeed");
+    assert!(matches!(request, Request::Auth(AuthRequest::List)));
+}
+
+#[test]
 fn root_without_command_maps_to_root_help() {
     let request = parse_from(["bb"]).expect("parse should succeed");
     assert!(matches!(request, Request::RootHelp));

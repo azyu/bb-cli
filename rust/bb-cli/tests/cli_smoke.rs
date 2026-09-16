@@ -87,6 +87,67 @@ fn auth_status_without_login_writes_error_to_stderr() {
 }
 
 #[test]
+fn auth_switch_changes_active_profile_without_reentering_token() {
+    let temp = tempdir().unwrap();
+    let config_path = temp.path().join("config.json");
+
+    for profile in ["work", "personal"] {
+        let output = bb_command()
+            .args([
+                "auth",
+                "login",
+                "--profile",
+                profile,
+                "--username",
+                profile,
+                "--token",
+                "token-123",
+            ])
+            .env("BB_CONFIG_PATH", &config_path)
+            .output()
+            .expect("command should run");
+        assert!(output.status.success(), "login {profile} should succeed");
+    }
+
+    // Last login wins, so "personal" is active before the switch.
+    let listed = bb_command()
+        .args(["auth", "list"])
+        .env("BB_CONFIG_PATH", &config_path)
+        .output()
+        .expect("command should run");
+    assert!(listed.status.success());
+    let listed = String::from_utf8(listed.stdout).expect("stdout should be utf-8");
+    assert!(listed.contains("* personal"), "got: {listed}");
+    assert!(listed.contains("  work"), "got: {listed}");
+    assert!(!listed.contains("token-123"), "list must not leak tokens");
+
+    let switched = bb_command()
+        .args(["auth", "switch", "--profile", "work"])
+        .env("BB_CONFIG_PATH", &config_path)
+        .output()
+        .expect("command should run");
+    assert!(switched.status.success());
+
+    let status = bb_command()
+        .args(["auth", "status"])
+        .env("BB_CONFIG_PATH", &config_path)
+        .output()
+        .expect("command should run");
+    assert!(status.status.success());
+    let status = String::from_utf8(status.stdout).expect("stdout should be utf-8");
+    assert!(status.contains("Profile: work"), "got: {status}");
+
+    let missing = bb_command()
+        .args(["auth", "switch", "--profile", "ghost"])
+        .env("BB_CONFIG_PATH", &config_path)
+        .output()
+        .expect("command should run");
+    assert!(!missing.status.success());
+    let stderr = String::from_utf8(missing.stderr).expect("stderr should be utf-8");
+    assert!(stderr.contains("not found"), "got: {stderr}");
+}
+
+#[test]
 fn repo_list_json_reads_config_and_calls_server() {
     let server = MockServer::start();
     let repos = server.mock(|when, then| {

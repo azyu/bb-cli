@@ -77,7 +77,7 @@ pub fn root_usage() -> String {
 }
 
 pub fn auth_usage() -> &'static str {
-    "Authenticate and inspect auth status\n\nUsage:\n  bb auth <command>\n\nCommands:\n  login    Authenticate with Bitbucket\n  status   Show current auth status\n  logout   Remove stored credentials\n"
+    "Authenticate and inspect auth status\n\nUsage:\n  bb auth <command>\n\nCommands:\n  login    Authenticate with Bitbucket\n  status   Show current auth status\n  list     List saved profiles\n  switch   Set the active profile\n  logout   Remove stored credentials\n"
 }
 
 pub fn repo_usage() -> &'static str {
@@ -109,7 +109,7 @@ pub fn bash_completion_script() -> &'static str {
   local cur="${COMP_WORDS[COMP_CWORD]}"
   local prev="${COMP_WORDS[COMP_CWORD-1]}"
   case "${prev}" in
-    auth)       COMPREPLY=($(compgen -W "login status logout" -- "${cur}")); return;;
+    auth)       COMPREPLY=($(compgen -W "login status list switch logout" -- "${cur}")); return;;
     repo)       COMPREPLY=($(compgen -W "list" -- "${cur}")); return;;
     pr)         COMPREPLY=($(compgen -W "list create merge get update approve unapprove request-changes remove-request-changes decline comment comment-update comments diff diffstat statuses activity" -- "${cur}")); return;;
     pipeline)   COMPREPLY=($(compgen -W "list get steps log run" -- "${cur}")); return;;
@@ -130,7 +130,7 @@ _bb() {
   commands=(auth api repo pr pipeline wiki issue completion version help)
   _arguments "1:command:($commands)" "*::arg:->args"
   case $words[1] in
-    auth)       subcmds=(login status logout);;
+    auth)       subcmds=(login status list switch logout);;
     repo)       subcmds=(list);;
     pr)         subcmds=(list create merge get update approve unapprove request-changes remove-request-changes decline comment comment-update comments diff diffstat statuses activity);;
     pipeline)   subcmds=(list get steps log run);;
@@ -145,7 +145,7 @@ compdef _bb bb"#
 
 pub fn fish_completion_script() -> &'static str {
     r#"complete -c bb -f -n '__fish_use_subcommand' -a "auth api repo pr pipeline wiki issue completion version help"
-complete -c bb -f -n '__fish_seen_subcommand_from auth' -a "login status logout"
+complete -c bb -f -n '__fish_seen_subcommand_from auth' -a "login status list switch logout"
 complete -c bb -f -n '__fish_seen_subcommand_from repo' -a "list"
 complete -c bb -f -n '__fish_seen_subcommand_from pr' -a "list create merge get update approve unapprove request-changes remove-request-changes decline comment comment-update comments diff diffstat statuses activity"
 complete -c bb -f -n '__fish_seen_subcommand_from pipeline' -a "list get steps log run"
@@ -159,7 +159,7 @@ pub fn powershell_completion_script() -> &'static str {
   param($wordToComplete, $commandAst)
   $tokens = $commandAst.ToString() -split '\s+'
   $subcmds = @{
-    'auth'       = @('login','status','logout')
+    'auth'       = @('login','status','list','switch','logout')
     'repo'       = @('list')
     'pr'         = @('list','create','merge','get','update','approve','unapprove','request-changes','remove-request-changes','decline','comment','comment-update','comments','diff','diffstat','statuses','activity')
     'pipeline'   = @('list','get','steps','log','run')
