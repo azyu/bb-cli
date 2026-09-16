@@ -59,7 +59,17 @@ fn auth_switch_requires_profile_and_list_takes_none() {
     );
 
     let request = parse_from(["bb", "auth", "list"]).expect("parse should succeed");
-    assert!(matches!(request, Request::Auth(AuthRequest::List)));
+    let Request::Auth(AuthRequest::List(request)) = request else {
+        panic!("expected auth list");
+    };
+    assert_eq!(request.output, "table", "list defaults to table output");
+
+    let request =
+        parse_from(["bb", "auth", "list", "--output", "json"]).expect("parse should succeed");
+    let Request::Auth(AuthRequest::List(request)) = request else {
+        panic!("expected auth list");
+    };
+    assert_eq!(request.output, "json");
 }
 
 #[test]

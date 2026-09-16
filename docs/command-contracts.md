@@ -57,12 +57,16 @@ This document is the contract baseline for `bb` command behavior.
 
 ### `bb auth list`
 - Purpose: List saved profiles so the active one and the switch targets are visible without reading the config file.
-- Optional flags: none
+- Optional flags:
+  - `--output` (`table` default, or `json`)
 - Output:
-  - Human only: one row per profile as `<marker> <name>  <auth mode>  <base URL>`, where the marker is `*` for the active profile and a space otherwise; rows are ordered by profile name
-  - Token values are never printed
+  - Table: one row per profile as `<marker> <name>  <auth mode>  <base URL>`, where the marker is `*` for the active profile and a space otherwise
+  - JSON: an array of `{name, active, auth, username, base_url}` objects, where `auth` is `bearer` or `basic`
+  - Rows are ordered by profile name in both modes
+  - Token values are never printed in either mode
 - Failure behavior:
   - No saved profiles -> non-zero exit with login guidance
+  - Unsupported `--output` value -> non-zero exit
 
 ### `bb auth switch`
 - Purpose: Change the active profile without re-supplying a token.

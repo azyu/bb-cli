@@ -77,7 +77,7 @@ pub fn root_usage() -> String {
 }
 
 pub fn auth_usage() -> &'static str {
-    "Authenticate and inspect auth status\n\nUsage:\n  bb auth <command>\n\nCommands:\n  login    Authenticate with Bitbucket\n  status   Show current auth status\n  list     List saved profiles\n  switch   Set the active profile\n  logout   Remove stored credentials\n"
+    "Authenticate and inspect auth status\n\nUsage:\n  bb auth <command>\n\nCommands:\n  login    Authenticate with Bitbucket\n  status   Show current auth status\n  list     List saved profiles (--output table|json)\n  switch   Set the active profile\n  logout   Remove stored credentials\n"
 }
 
 pub fn repo_usage() -> &'static str {

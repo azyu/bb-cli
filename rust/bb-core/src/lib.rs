@@ -69,6 +69,11 @@ pub struct AuthSwitchRequest {
 }
 
 #[derive(Debug, Clone)]
+pub struct AuthListRequest {
+    pub output: String,
+}
+
+#[derive(Debug, Clone)]
 pub struct ApiRequest {
     pub method: String,
     pub input: Option<String>,
@@ -427,7 +432,7 @@ pub enum AuthRequest {
     Status(AuthStatusRequest),
     Logout(AuthLogoutRequest),
     Switch(AuthSwitchRequest),
-    List,
+    List(AuthListRequest),
 }
 
 #[derive(Debug, Clone)]

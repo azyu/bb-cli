@@ -148,6 +148,67 @@ fn auth_switch_changes_active_profile_without_reentering_token() {
 }
 
 #[test]
+fn auth_list_json_exposes_active_flag_and_hides_tokens() {
+    let temp = tempdir().unwrap();
+    let config_path = temp.path().join("config.json");
+
+    for (profile, username) in [("work", "dev@example.com"), ("bot", "")] {
+        let mut command = bb_command();
+        command.args([
+            "auth",
+            "login",
+            "--profile",
+            profile,
+            "--token",
+            "token-123",
+        ]);
+        if !username.is_empty() {
+            command.args(["--username", username]);
+        }
+        let output = command
+            .env("BB_CONFIG_PATH", &config_path)
+            .output()
+            .expect("command should run");
+        assert!(output.status.success(), "login {profile} should succeed");
+    }
+
+    // Make the active profile explicit so this test does not depend on login ordering.
+    let switched = bb_command()
+        .args(["auth", "switch", "--profile", "work"])
+        .env("BB_CONFIG_PATH", &config_path)
+        .output()
+        .expect("command should run");
+    assert!(switched.status.success());
+
+    let output = bb_command()
+        .args(["auth", "list", "--output", "json"])
+        .env("BB_CONFIG_PATH", &config_path)
+        .output()
+        .expect("command should run");
+    assert!(output.status.success());
+
+    let stdout = String::from_utf8(output.stdout).expect("stdout should be utf-8");
+    assert!(!stdout.contains("token-123"), "json must not leak tokens");
+
+    let parsed: serde_json::Value = serde_json::from_str(&stdout).expect("valid json");
+    let rows = parsed.as_array().expect("json array");
+    assert_eq!(rows.len(), 2);
+
+    // Profiles are ordered by name, so "bot" comes first.
+    assert_eq!(rows[0]["name"], "bot");
+    assert_eq!(rows[0]["active"], false);
+    assert_eq!(rows[0]["auth"], "bearer");
+    assert_eq!(rows[0]["username"], "");
+
+    assert_eq!(rows[1]["name"], "work");
+    assert_eq!(rows[1]["active"], true);
+    assert_eq!(rows[1]["auth"], "basic");
+    assert_eq!(rows[1]["username"], "dev@example.com");
+    assert_eq!(rows[1]["base_url"], "https://api.bitbucket.org/2.0");
+    assert!(rows[1].get("token").is_none(), "token field must not exist");
+}
+
+#[test]
 fn repo_list_json_reads_config_and_calls_server() {
     let server = MockServer::start();
     let repos = server.mock(|when, then| {

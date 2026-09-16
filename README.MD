@@ -73,6 +73,7 @@ bb auth status
 > bb auth login --profile personal --username "<personal-email>" --token "<token>"
 >
 > bb auth list                 # saved profiles, active one marked with *
+> bb auth list --output json  # same, machine-readable
 > bb auth switch --profile work   # change the active profile, no token needed
 > bb pr list --profile personal   # one-off override, active profile unchanged
 > ```

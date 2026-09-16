@@ -1,5 +1,6 @@
 use bb_core::{
-    AuthLoginRequest, AuthLogoutRequest, AuthRequest, AuthStatusRequest, AuthSwitchRequest, Request,
+    AuthListRequest, AuthLoginRequest, AuthLogoutRequest, AuthRequest, AuthStatusRequest,
+    AuthSwitchRequest, Request,
 };
 use clap::{Args, Subcommand};
 
@@ -14,7 +15,7 @@ pub(super) enum AuthCommands {
     /// Set the active authentication profile
     Switch(AuthSwitchArgs),
     /// List saved authentication profiles
-    List,
+    List(AuthListArgs),
 }
 
 #[derive(Debug, Args)]
@@ -57,6 +58,13 @@ pub(super) struct AuthSwitchArgs {
     pub(super) profile: String,
 }
 
+#[derive(Debug, Args)]
+pub(super) struct AuthListArgs {
+    #[arg(long, default_value = "table")]
+    /// Output format
+    pub(super) output: String,
+}
+
 pub(super) fn map_request(command: Option<AuthCommands>) -> Request {
     Request::Auth(match command {
         None => AuthRequest::Help,
@@ -76,6 +84,8 @@ pub(super) fn map_request(command: Option<AuthCommands>) -> Request {
         Some(AuthCommands::Switch(args)) => AuthRequest::Switch(AuthSwitchRequest {
             profile: args.profile,
         }),
-        Some(AuthCommands::List) => AuthRequest::List,
+        Some(AuthCommands::List(args)) => AuthRequest::List(AuthListRequest {
+            output: args.output,
+        }),
     })
 }
