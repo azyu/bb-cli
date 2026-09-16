@@ -12,7 +12,7 @@
 
 - repo, PR, pipeline, issue, wiki, raw API 호출을 `gh` 스타일 그룹으로 제공
 - 로컬 Bitbucket `remote.origin.url`에서 repo context 자동 추론
-- 사람용 text/table 출력과 자동화용 JSON 출력을 함께 지원
+- 사람용 text/table 출력과 자동화용 안정적인 JSON 출력을 함께 지원
 - bash, zsh, fish, PowerShell용 셸 자동완성 제공
 - Linux, macOS, Windows용 릴리즈 바이너리 제공
 
@@ -82,14 +82,16 @@ bb auth status
 ### 3. 자주 쓰는 명령 실행
 
 Bitbucket 저장소 안에서는 `remote.origin.url`에서 `--workspace`와 `--repo`를 자동으로 추론할 수 있습니다.
-저장소 밖에서는 `-R <workspace>/<repo>`로 대상을 지정할 수 있습니다. `-R`은 `--workspace` 또는 `--repo`와 함께 사용할 수 없습니다.
+저장소 밖에서는 `-R <workspace>/<repo>`로 대상을 명시적으로 지정합니다. `-R`은 `--workspace` 또는 `--repo`와 함께 사용할 수 없습니다.
 
 ```bash
 bb pr list
 bb pr comments 123
 bb pr comments 123 --comment-id 456 --output json
+bb pr comment 123 --content "답글 내용" --parent 456
 bb pr comment-update 123 --comment-id 456 --content "수정된 댓글"
 bb pr create --title "My PR" --source feature --destination main
+bb api --method POST --input ./body.json repositories/acme/widgets/pullrequests/123/comments
 bb pipeline list
 bb pipeline get --uuid "{pipeline-uuid}"
 bb pipeline get --build 123
