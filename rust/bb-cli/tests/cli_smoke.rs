@@ -209,6 +209,34 @@ fn auth_list_json_exposes_active_flag_and_hides_tokens() {
 }
 
 #[test]
+fn auth_list_json_emits_error_envelope_when_no_profiles_exist() {
+    let temp = tempdir().unwrap();
+    let output = bb_command()
+        .args(["auth", "list", "--output", "json"])
+        .env("BB_CONFIG_PATH", temp.path().join("config.json"))
+        .output()
+        .expect("command should run");
+
+    assert!(!output.status.success());
+
+    let stdout = String::from_utf8(output.stdout).expect("stdout should be utf-8");
+    let parsed: serde_json::Value =
+        serde_json::from_str(&stdout).expect("json mode must emit a JSON error envelope on stdout");
+    assert_eq!(parsed["error"]["code"], "not_logged_in");
+
+    // Table mode keeps the plain-text error on stderr.
+    let output = bb_command()
+        .args(["auth", "list"])
+        .env("BB_CONFIG_PATH", temp.path().join("config.json"))
+        .output()
+        .expect("command should run");
+    assert!(!output.status.success());
+    assert!(output.stdout.is_empty());
+    let stderr = String::from_utf8(output.stderr).expect("stderr should be utf-8");
+    assert!(stderr.contains("not logged in"));
+}
+
+#[test]
 fn repo_list_json_reads_config_and_calls_server() {
     let server = MockServer::start();
     let repos = server.mock(|when, then| {
