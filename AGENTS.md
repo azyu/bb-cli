@@ -166,6 +166,7 @@ Rules:
 
 ## Known Gotchas
 
+- Shell completions are hand-written string literals in `rust/bb-core/src/render.rs`, not generated from the clap definitions. Adding or renaming a subcommand needs four separate edits there (bash, zsh, fish, powershell) plus the matching `*_usage()` help text; clap alone will not pick it up, and no test currently fails if you forget.
 - Bitbucket Cloud and Data Center APIs differ significantly; do not mix them accidentally.
 - For list endpoints, rely on API-provided pagination (`next`) instead of hand-built page URLs.
 - Keep auth design aligned with current Bitbucket Cloud recommendations; avoid deprecated defaults.
