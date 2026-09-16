@@ -13,9 +13,6 @@ pub(super) struct ApiArgs {
     /// Follow every pagination `next` link
     pub(super) paginate: bool,
     #[arg(long)]
-    /// Authentication profile name
-    pub(super) profile: Option<String>,
-    #[arg(long)]
     /// Bitbucket Cloud API filter expression
     pub(super) q: Option<String>,
     #[arg(long)]
@@ -28,12 +25,12 @@ pub(super) struct ApiArgs {
     pub(super) endpoint: Option<String>,
 }
 
-pub(super) fn map_request(args: ApiArgs) -> Request {
+pub(super) fn map_request(args: ApiArgs, profile: Option<String>) -> Request {
     Request::Api(ApiRequest {
         method: args.method,
         input: args.input,
         paginate: args.paginate,
-        profile: args.profile,
+        profile,
         q: args.q,
         sort: args.sort,
         fields: args.fields,

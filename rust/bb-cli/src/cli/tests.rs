@@ -45,6 +45,67 @@ fn bare_token_is_normalized_to_stdin_sentinel() {
 }
 
 #[test]
+fn profile_flag_is_accepted_before_or_after_the_subcommand() {
+    let prefix = parse_from(["bb", "--profile", "work", "pr", "list"]).expect("prefix parses");
+    let suffix = parse_from(["bb", "pr", "list", "--profile", "work"]).expect("suffix parses");
+
+    for (request, label) in [(prefix, "prefix"), (suffix, "suffix")] {
+        let Request::Pr(PrRequest::List(request)) = request else {
+            panic!("expected pr list for {label} form");
+        };
+        assert_eq!(
+            request.profile.as_deref(),
+            Some("work"),
+            "{label} form should carry the profile"
+        );
+    }
+
+    // The global flag reaches every command group, not just `pr`.
+    let request = parse_from(["bb", "--profile", "work", "api", "user"]).expect("api parses");
+    let Request::Api(request) = request else {
+        panic!("expected api");
+    };
+    assert_eq!(request.profile.as_deref(), Some("work"));
+
+    // Omitting it still means "use the active profile".
+    let request = parse_from(["bb", "pr", "list"]).expect("parse should succeed");
+    let Request::Pr(PrRequest::List(request)) = request else {
+        panic!("expected pr list");
+    };
+    assert_eq!(request.profile, None);
+}
+
+#[test]
+fn global_profile_drives_auth_subcommands() {
+    // `auth login` keeps its "default" fallback when the flag is absent.
+    let request =
+        parse_from(["bb", "auth", "login", "--token", "t"]).expect("parse should succeed");
+    let Request::Auth(AuthRequest::Login(request)) = request else {
+        panic!("expected auth login");
+    };
+    assert_eq!(request.profile, "default");
+
+    let request = parse_from(["bb", "--profile", "work", "auth", "login", "--token", "t"])
+        .expect("parse should succeed");
+    let Request::Auth(AuthRequest::Login(request)) = request else {
+        panic!("expected auth login");
+    };
+    assert_eq!(request.profile, "work");
+
+    // `auth switch` accepts either position and still requires a value.
+    for args in [
+        vec!["bb", "auth", "switch", "--profile", "work"],
+        vec!["bb", "--profile", "work", "auth", "switch"],
+    ] {
+        let request = parse_from(args.clone()).expect("parse should succeed");
+        let Request::Auth(AuthRequest::Switch(request)) = request else {
+            panic!("expected auth switch for {args:?}");
+        };
+        assert_eq!(request.profile, "work");
+    }
+}
+
+#[test]
 fn auth_switch_requires_profile_and_list_takes_none() {
     let request =
         parse_from(["bb", "auth", "switch", "--profile", "work"]).expect("parse should succeed");

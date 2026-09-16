@@ -9,20 +9,17 @@ pub(super) enum AuthCommands {
     /// Save a Bitbucket Cloud authentication profile
     Login(AuthLoginArgs),
     /// Show authentication profile status
-    Status(AuthStatusArgs),
+    Status,
     /// Remove a saved authentication profile
-    Logout(AuthLogoutArgs),
+    Logout,
     /// Set the active authentication profile
-    Switch(AuthSwitchArgs),
+    Switch,
     /// List saved authentication profiles
     List(AuthListArgs),
 }
 
 #[derive(Debug, Args)]
 pub(super) struct AuthLoginArgs {
-    #[arg(long, default_value = "default")]
-    /// Authentication profile name
-    pub(super) profile: String,
     #[arg(long)]
     /// API token value, or read from stdin when omitted
     pub(super) token: Option<String>,
@@ -38,51 +35,26 @@ pub(super) struct AuthLoginArgs {
 }
 
 #[derive(Debug, Args)]
-pub(super) struct AuthStatusArgs {
-    #[arg(long)]
-    /// Authentication profile name
-    pub(super) profile: Option<String>,
-}
-
-#[derive(Debug, Args)]
-pub(super) struct AuthLogoutArgs {
-    #[arg(long)]
-    /// Authentication profile name
-    pub(super) profile: Option<String>,
-}
-
-#[derive(Debug, Args)]
-pub(super) struct AuthSwitchArgs {
-    #[arg(long)]
-    /// Authentication profile name to make active
-    pub(super) profile: String,
-}
-
-#[derive(Debug, Args)]
 pub(super) struct AuthListArgs {
     #[arg(long, default_value = "table")]
     /// Output format
     pub(super) output: String,
 }
 
-pub(super) fn map_request(command: Option<AuthCommands>) -> Request {
+pub(super) fn map_request(command: Option<AuthCommands>, profile: Option<String>) -> Request {
     Request::Auth(match command {
         None => AuthRequest::Help,
         Some(AuthCommands::Login(args)) => AuthRequest::Login(AuthLoginRequest {
-            profile: args.profile,
+            profile: profile.unwrap_or_else(|| "default".to_string()),
             token: args.token,
             username: args.username,
             with_token: args.with_token,
             base_url: args.base_url,
         }),
-        Some(AuthCommands::Status(args)) => AuthRequest::Status(AuthStatusRequest {
-            profile: args.profile,
-        }),
-        Some(AuthCommands::Logout(args)) => AuthRequest::Logout(AuthLogoutRequest {
-            profile: args.profile,
-        }),
-        Some(AuthCommands::Switch(args)) => AuthRequest::Switch(AuthSwitchRequest {
-            profile: args.profile,
+        Some(AuthCommands::Status) => AuthRequest::Status(AuthStatusRequest { profile }),
+        Some(AuthCommands::Logout) => AuthRequest::Logout(AuthLogoutRequest { profile }),
+        Some(AuthCommands::Switch) => AuthRequest::Switch(AuthSwitchRequest {
+            profile: profile.unwrap_or_default(),
         }),
         Some(AuthCommands::List(args)) => AuthRequest::List(AuthListRequest {
             output: args.output,

@@ -1,6 +1,6 @@
 use std::ffi::OsString;
 
-use bb_core::Request;
+use bb_core::{AuthRequest, Request};
 use clap::{Parser, Subcommand};
 
 mod api;
@@ -36,6 +36,10 @@ struct Cli {
         value_parser = repository::parse_repository_target
     )]
     repository: Option<repository::RepositoryTarget>,
+
+    /// Authentication profile name
+    #[arg(long, global = true, value_name = "NAME")]
+    profile: Option<String>,
 
     #[command(subcommand)]
     pub command: Option<Commands>,
@@ -106,6 +110,7 @@ where
     if let Some(repository) = repository {
         repository::apply_repository_target(&mut request, repository)?;
     }
+    require_switch_profile(&request)?;
     Ok(request)
 }
 
@@ -133,21 +138,36 @@ fn normalize_args(args: Vec<OsString>) -> Vec<OsString> {
     out
 }
 
+/// `--profile` is global, so clap cannot mark it required for `auth switch` alone.
+/// Check it here to keep the missing-value failure a clap error rather than a runtime one.
+fn require_switch_profile(request: &Request) -> Result<(), clap::Error> {
+    if let Request::Auth(AuthRequest::Switch(request)) = request
+        && request.profile.trim().is_empty()
+    {
+        return Err(clap::Error::raw(
+            clap::error::ErrorKind::MissingRequiredArgument,
+            "bb auth switch requires --profile <NAME>\n",
+        ));
+    }
+    Ok(())
+}
+
 fn map_request(cli: Cli) -> Request {
     if cli.version {
         return Request::Version;
     }
 
+    let profile = cli.profile;
     match cli.command {
         None => Request::RootHelp,
         Some(Commands::Version) => Request::Version,
         Some(Commands::Completion(args)) => Request::Completion(args.shell),
-        Some(Commands::Auth { command }) => auth::map_request(command),
-        Some(Commands::Api(args)) => api::map_request(args),
-        Some(Commands::Repo { command }) => repo::map_request(command),
-        Some(Commands::Pr { command }) => pr::map_request(command),
-        Some(Commands::Pipeline { command }) => pipeline::map_request(command),
-        Some(Commands::Issue { command }) => issue::map_request(command),
-        Some(Commands::Wiki { command }) => wiki::map_request(command),
+        Some(Commands::Auth { command }) => auth::map_request(command, profile),
+        Some(Commands::Api(args)) => api::map_request(args, profile),
+        Some(Commands::Repo { command }) => repo::map_request(command, profile),
+        Some(Commands::Pr { command }) => pr::map_request(command, profile),
+        Some(Commands::Pipeline { command }) => pipeline::map_request(command, profile),
+        Some(Commands::Issue { command }) => issue::map_request(command, profile),
+        Some(Commands::Wiki { command }) => wiki::map_request(command, profile),
     }
 }

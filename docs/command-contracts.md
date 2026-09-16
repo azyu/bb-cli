@@ -10,6 +10,7 @@ This document is the contract baseline for `bb` command behavior.
 - Versioning: SemVer + short git hash build metadata (e.g. `0.0.1+abc1234`)
 - Repo context inference: for repo-scoped commands, `--workspace`/`--repo` can be inferred from local Bitbucket `remote.origin.url` (`https://bitbucket.org/<workspace>/<repo>.git` or `git@bitbucket.org:<workspace>/<repo>.git`) when omitted
 - Repo selector: repo-scoped commands accept global `-R`/`--repository <workspace>/<repo>`; it supplies both target values, takes precedence over local Git inference, and cannot be combined with `--workspace` or `--repo`
+- Profile selector: every command accepts global `--profile <name>`, before or after the subcommand (`bb --profile work pr list` and `bb pr list --profile work` are equivalent). It overrides the active profile for that invocation only. Two commands read it as their subject rather than as an override: `bb auth login` writes to it (falling back to `default`), and `bb auth switch` makes it active (required, missing value is a clap parse error)
 - Root help behavior: `bb` and top-level `bb --help` print the same top-level help with a short quick-start block for auth and common PR flows (`pr create`, `pr comments`) plus a note about `--output json`
 - `bb help` is a root-help alias and prints the same output as `bb`/`bb --help`
 - Existing-PR commands under `bb pr` accept the pull request ID as positional `<id>` or `--id`; passing both in one invocation is an error
@@ -28,7 +29,6 @@ This document is the contract baseline for `bb` command behavior.
 - Required inputs:
   - `--token <value>` or `--with-token` or `BITBUCKET_TOKEN` environment variable
 - Optional flags:
-  - `--profile` (default: `default`)
   - `--username` (Bitbucket username/email; when set, uses Basic auth)
   - `--base-url` (default: `https://api.bitbucket.org/2.0`)
   - `--with-token` (read token from stdin)
@@ -48,8 +48,7 @@ This document is the contract baseline for `bb` command behavior.
 
 ### `bb auth status`
 - Purpose: Show current/selected profile status without leaking secret values.
-- Optional flags:
-  - `--profile` (override active profile)
+- Optional flags: none
 - Output:
   - Human only: profile name, base URL, auth mode, token configured state
 - Failure behavior:
@@ -71,7 +70,7 @@ This document is the contract baseline for `bb` command behavior.
 ### `bb auth switch`
 - Purpose: Change the active profile without re-supplying a token.
 - Required inputs:
-  - `--profile <name>` (the profile to make active)
+  - global `--profile <name>` (the profile to make active)
 - Output:
   - Human: new active profile name
 - Failure behavior:
@@ -81,8 +80,7 @@ This document is the contract baseline for `bb` command behavior.
 
 ### `bb auth logout`
 - Purpose: Remove a saved profile credential and clear/switch active profile.
-- Optional flags:
-  - `--profile` (remove a specific profile; default removes current profile)
+- Optional flags: none
 - Output:
   - Human: removed profile name; prints new active profile when one remains
 - Failure behavior:
@@ -98,7 +96,6 @@ This document is the contract baseline for `bb` command behavior.
   - `--method` (default: `GET`)
   - `--input <path>` (`-` reads the request body JSON from stdin)
   - `--paginate` (follow `next` links and merge `values`)
-  - `--profile`
   - `--q`, `--sort`, `--fields`
 - Output:
   - Pretty-printed JSON when the response `Content-Type` MIME subtype is `json` or ends with `+json`
@@ -120,7 +117,6 @@ This document is the contract baseline for `bb` command behavior.
 - Optional flags:
   - `--output` (`table` default, `json`)
   - `--all` (follow pagination)
-  - `--profile`
   - `--q`, `--sort`, `--fields`
   - `--json-fields` (requires `--output json`)
 - Output:
@@ -154,7 +150,6 @@ Naming rule: prefer Bitbucket API-aligned names (`get`, `update`, `request-chang
   - `--all` (follow pagination)
     - When stderr is a TTY, page progress is rewritten on stderr; non-TTY execution remains quiet
   - `-L`, `--limit <N>` (positive maximum item count; uses Bitbucket `pagelen` bounds and conflicts with `--all`)
-  - `--profile`
   - `--state` (`OPEN|MERGED|DECLINED`)
   - `--q`, `--sort`, `--fields`
   - `--json-fields` (requires `--output json`)
@@ -178,7 +173,6 @@ Naming rule: prefer Bitbucket API-aligned names (`get`, `update`, `request-chang
 - Optional flags:
   - `--description` (alias: `--body`)
   - `--close-branch` (delete source branch after merge)
-  - `--profile`
   - `--output` (`text` default, `json`)
 - Output:
   - `text`: created PR summary and URL when provided by API
@@ -196,7 +190,6 @@ Naming rule: prefer Bitbucket API-aligned names (`get`, `update`, `request-chang
   - `--message` (merge commit message)
   - `--strategy` (`merge_commit|squash|fast_forward`)
   - `--close-branch` (delete source branch after merge)
-  - `--profile`
   - `--output` (`text` default, `json`)
 - Output:
   - `text`: merged PR summary and URL when provided by API
@@ -215,7 +208,6 @@ Naming rule: prefer Bitbucket API-aligned names (`get`, `update`, `request-chang
   - `--workspace`, `--repo` unless both can be inferred from local Bitbucket `remote.origin.url`
   - pull request ID via positional `<id>` or `--id`
 - Optional flags:
-  - `--profile`
   - `--fields`
   - `--output` (`text` default, `json`)
   - `--json-fields` (requires `--output json`)
@@ -239,7 +231,6 @@ Naming rule: prefer Bitbucket API-aligned names (`get`, `update`, `request-chang
   - `--description` (alias: `--body`)
   - `--source`
   - `--destination`
-  - `--profile`
   - `--output` (`text` default, `json`)
 - Output:
   - `text`: updated PR summary and URL when provided by API
@@ -257,7 +248,6 @@ Naming rule: prefer Bitbucket API-aligned names (`get`, `update`, `request-chang
   - `--workspace`, `--repo` unless both can be inferred from local Bitbucket `remote.origin.url`
   - pull request ID via positional `<id>` or `--id`
 - Optional flags:
-  - `--profile`
   - `--output` (`text` default, `json`)
 - Output:
   - `text`: approval confirmation
@@ -274,7 +264,6 @@ Naming rule: prefer Bitbucket API-aligned names (`get`, `update`, `request-chang
   - `--workspace`, `--repo` unless both can be inferred from local Bitbucket `remote.origin.url`
   - pull request ID via positional `<id>` or `--id`
 - Optional flags:
-  - `--profile`
   - `--output` (`text` default, `json`)
 - Output:
   - `text`: approval removal confirmation
@@ -291,7 +280,6 @@ Naming rule: prefer Bitbucket API-aligned names (`get`, `update`, `request-chang
   - `--workspace`, `--repo` unless both can be inferred from local Bitbucket `remote.origin.url`
   - pull request ID via positional `<id>` or `--id`
 - Optional flags:
-  - `--profile`
   - `--output` (`text` default, `json`)
 - Output:
   - `text`: change-request confirmation
@@ -308,7 +296,6 @@ Naming rule: prefer Bitbucket API-aligned names (`get`, `update`, `request-chang
   - `--workspace`, `--repo` unless both can be inferred from local Bitbucket `remote.origin.url`
   - pull request ID via positional `<id>` or `--id`
 - Optional flags:
-  - `--profile`
   - `--output` (`text` default, `json`)
 - Output:
   - `text`: change-request removal confirmation
@@ -326,7 +313,6 @@ Naming rule: prefer Bitbucket API-aligned names (`get`, `update`, `request-chang
   - `--workspace`, `--repo` unless both can be inferred from local Bitbucket `remote.origin.url`
   - pull request ID via positional `<id>` or `--id`
 - Optional flags:
-  - `--profile`
   - `--output` (`text` default, `json`)
 - Output:
   - `text`: declined PR summary and URL when provided by API
@@ -345,7 +331,6 @@ Naming rule: prefer Bitbucket API-aligned names (`get`, `update`, `request-chang
   - `--content` (alias: `--body`)
 - Optional flags:
   - `--parent` (reply to an existing comment ID)
-  - `--profile`
   - `--output` (`text` default, `json`)
 - Output:
   - `text`: created comment summary and URL when provided by API
@@ -366,7 +351,6 @@ Naming rule: prefer Bitbucket API-aligned names (`get`, `update`, `request-chang
   - `--comment-id` (existing pull request comment ID)
   - `--content` (alias: `--body`)
 - Optional flags:
-  - `--profile`
   - `--output` (`text` default, `json`)
 - Output:
   - `text`: updated comment summary and URL when provided by API
@@ -389,7 +373,6 @@ Naming rule: prefer Bitbucket API-aligned names (`get`, `update`, `request-chang
   - `--comment-id` (single comment lookup within the selected pull request)
   - `--output` (`table` default, `json`)
   - `--all` (follow pagination and fetch all comment pages; default is the first page only)
-  - `--profile`
   - `--q`, `--sort`, `--fields`
   - `--json-fields` (requires `--output json`)
 - Output:
@@ -413,7 +396,6 @@ Naming rule: prefer Bitbucket API-aligned names (`get`, `update`, `request-chang
   - `--workspace`, `--repo` unless both can be inferred from local Bitbucket `remote.origin.url`
   - pull request ID via positional `<id>` or `--id`
 - Optional flags:
-  - `--profile`
   - `--output` (`text` default, `json`)
   - `--name-only` (use the diffstat endpoint and print changed paths only)
 - Output:
@@ -433,7 +415,6 @@ Naming rule: prefer Bitbucket API-aligned names (`get`, `update`, `request-chang
 - Optional flags:
   - `--output` (`table` default, `json`)
   - `--all`
-  - `--profile`
   - `--q`, `--sort`, `--fields`
   - `--json-fields` (requires `--output json`)
 - Output:
@@ -454,7 +435,6 @@ Naming rule: prefer Bitbucket API-aligned names (`get`, `update`, `request-chang
 - Optional flags:
   - `--output` (`table` default, `json`)
   - `--all`
-  - `--profile`
   - `--q`, `--sort`, `--fields`
   - `--json-fields` (requires `--output json`)
 - Output:
@@ -474,7 +454,6 @@ Naming rule: prefer Bitbucket API-aligned names (`get`, `update`, `request-chang
 - Optional flags:
   - `--output` (`table` default, `json`)
   - `--all`
-  - `--profile`
   - `--q`, `--sort`, `--fields`
   - `--json-fields` (requires `--output json`)
 - Output:
@@ -495,7 +474,6 @@ Naming rule: prefer Bitbucket API-aligned names (`get`, `update`, `request-chang
 - Optional flags:
   - `--output` (`table` default, `json`)
   - `--all` (follow pagination)
-  - `--profile`
   - `--branch <name>` (server-side filter via the `target.branch` query parameter)
   - `--sort` (defaults to `-created_on`, newest-first; an explicit value overrides the default), `--fields`
   - `--json-fields` (requires `--output json`)
@@ -513,7 +491,6 @@ Naming rule: prefer Bitbucket API-aligned names (`get`, `update`, `request-chang
   - `--workspace`, `--repo` unless both can be inferred from local Bitbucket `remote.origin.url`
   - exactly one of positional `<selector>` (build number or brace-wrapped UUID), `--uuid`, or `--build`
 - Optional flags:
-  - `--profile`
   - `--fields`
   - `--output` (`text` default, `json`)
   - `--json-fields` (requires `--output json`)
@@ -534,7 +511,6 @@ Naming rule: prefer Bitbucket API-aligned names (`get`, `update`, `request-chang
 - Optional flags:
   - `--output` (`table` default, `json`)
   - `--all`
-  - `--profile`
   - `--sort`, `--fields`
   - `--json-fields` (requires `--output json`)
 - Output:
@@ -553,7 +529,6 @@ Naming rule: prefer Bitbucket API-aligned names (`get`, `update`, `request-chang
   - exactly one of positional `<selector>` (build number or brace-wrapped UUID), `--uuid`, or `--build`
   - `--step`
 - Optional flags:
-  - `--profile`
   - `--output` (`text` default, `json`)
 - Output:
   - `text`: raw pipeline step log payload
@@ -570,7 +545,6 @@ Naming rule: prefer Bitbucket API-aligned names (`get`, `update`, `request-chang
   - `--workspace`, `--repo` unless both can be inferred from local Bitbucket `remote.origin.url`
   - `--branch`
 - Optional flags:
-  - `--profile`
   - `--output` (`text` default, `json`)
 - Output:
   - `text`: triggered pipeline summary (`UUID`, state, ref)
@@ -588,7 +562,6 @@ Naming rule: prefer Bitbucket API-aligned names (`get`, `update`, `request-chang
 - Optional flags:
   - `--output` (`table` default, `json`)
   - `--all` (follow pagination)
-  - `--profile`
   - `--q`, `--sort`, `--fields`
 - Output:
   - `table`: `ID`, `STATE`, `KIND`, `PRIORITY`, `TITLE`
@@ -607,7 +580,6 @@ Naming rule: prefer Bitbucket API-aligned names (`get`, `update`, `request-chang
   - `--state`
   - `--kind` (`bug|enhancement|proposal|task`)
   - `--priority` (`trivial|minor|major|critical|blocker`)
-  - `--profile`
   - `--output` (`text` default, `json`)
 - Output:
   - `text`: created issue summary and URL when provided by API
@@ -627,7 +599,6 @@ Naming rule: prefer Bitbucket API-aligned names (`get`, `update`, `request-chang
   - `--state`
   - `--kind`
   - `--priority`
-  - `--profile`
   - `--output` (`text` default, `json`)
 - Output:
   - `text`: updated issue summary and URL when provided by API
@@ -647,7 +618,6 @@ Implementation note:
 - Required flags:
   - `--workspace`, `--repo` unless both can be inferred from local Bitbucket `remote.origin.url`
 - Optional flags:
-  - `--profile`
   - `--output` (`table` default, `json`)
 - Output:
   - `table`: `PATH`, `SIZE`
@@ -662,7 +632,6 @@ Implementation note:
   - `--workspace`, `--repo` unless both can be inferred from local Bitbucket `remote.origin.url`
   - `--page`
 - Optional flags:
-  - `--profile`
   - `--output` (`text` default, `json`)
 - Output:
   - `text`: raw file content
@@ -680,7 +649,6 @@ Implementation note:
   - one of `--content` or `--file`
 - Optional flags:
   - `--message` (git commit message)
-  - `--profile`
   - `--output` (`text` default, `json`)
 - Output:
   - `text`: update/no-change summary

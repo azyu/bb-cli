@@ -19,9 +19,6 @@ pub(super) struct RepoListArgs {
     /// Fetch all pages instead of the first page only
     pub(super) all: bool,
     #[arg(long)]
-    /// Authentication profile name
-    pub(super) profile: Option<String>,
-    #[arg(long)]
     /// Bitbucket Cloud API filter expression
     pub(super) q: Option<String>,
     #[arg(long)]
@@ -35,14 +32,14 @@ pub(super) struct RepoListArgs {
     pub(super) json_fields: Option<String>,
 }
 
-pub(super) fn map_request(command: Option<RepoCommands>) -> Request {
+pub(super) fn map_request(command: Option<RepoCommands>, profile: Option<String>) -> Request {
     Request::Repo(match command {
         None => RepoRequest::Help,
         Some(RepoCommands::List(args)) => RepoRequest::List(RepoListRequest {
             workspace: args.workspace,
             output: args.output,
             all: args.all,
-            profile: args.profile,
+            profile,
             q: args.q,
             sort: args.sort,
             fields: args.fields,

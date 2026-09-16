@@ -75,9 +75,6 @@ pub(super) struct PrListArgs {
     )]
     pub(super) limit: Option<usize>,
     #[arg(long)]
-    /// Authentication profile name
-    pub(super) profile: Option<String>,
-    #[arg(long)]
     /// Pull request state: OPEN, MERGED, or DECLINED
     pub(super) state: Option<String>,
     #[arg(long)]
@@ -110,8 +107,6 @@ pub(super) struct PrCreateArgs {
     pub(super) description: Option<String>,
     #[arg(long)]
     pub(super) close_branch: bool,
-    #[arg(long)]
-    pub(super) profile: Option<String>,
     #[arg(long, default_value = "text")]
     pub(super) output: String,
 }
@@ -132,8 +127,6 @@ pub(super) struct PrMergeArgs {
     pub(super) strategy: Option<String>,
     #[arg(long)]
     pub(super) close_branch: bool,
-    #[arg(long)]
-    pub(super) profile: Option<String>,
     #[arg(long, default_value = "text")]
     pub(super) output: String,
 }
@@ -148,8 +141,6 @@ pub(super) struct PrGetArgs {
     pub(super) id: Option<String>,
     #[arg(index = 1, value_name = "ID", conflicts_with = "id")]
     pub(super) pr_id: Option<String>,
-    #[arg(long)]
-    pub(super) profile: Option<String>,
     #[arg(long, default_value = "text")]
     pub(super) output: String,
     #[arg(long)]
@@ -176,8 +167,6 @@ pub(super) struct PrUpdateArgs {
     pub(super) source: Option<String>,
     #[arg(long)]
     pub(super) destination: Option<String>,
-    #[arg(long)]
-    pub(super) profile: Option<String>,
     #[arg(long, default_value = "text")]
     pub(super) output: String,
 }
@@ -192,8 +181,6 @@ pub(super) struct PrApproveArgs {
     pub(super) id: Option<String>,
     #[arg(index = 1, value_name = "ID", conflicts_with = "id")]
     pub(super) pr_id: Option<String>,
-    #[arg(long)]
-    pub(super) profile: Option<String>,
     #[arg(long, default_value = "text")]
     pub(super) output: String,
 }
@@ -208,8 +195,6 @@ pub(super) struct PrUnapproveArgs {
     pub(super) id: Option<String>,
     #[arg(index = 1, value_name = "ID", conflicts_with = "id")]
     pub(super) pr_id: Option<String>,
-    #[arg(long)]
-    pub(super) profile: Option<String>,
     #[arg(long, default_value = "text")]
     pub(super) output: String,
 }
@@ -224,8 +209,6 @@ pub(super) struct PrRequestChangesArgs {
     pub(super) id: Option<String>,
     #[arg(index = 1, value_name = "ID", conflicts_with = "id")]
     pub(super) pr_id: Option<String>,
-    #[arg(long)]
-    pub(super) profile: Option<String>,
     #[arg(long, default_value = "text")]
     pub(super) output: String,
 }
@@ -240,8 +223,6 @@ pub(super) struct PrRemoveRequestChangesArgs {
     pub(super) id: Option<String>,
     #[arg(index = 1, value_name = "ID", conflicts_with = "id")]
     pub(super) pr_id: Option<String>,
-    #[arg(long)]
-    pub(super) profile: Option<String>,
     #[arg(long, default_value = "text")]
     pub(super) output: String,
 }
@@ -256,8 +237,6 @@ pub(super) struct PrDeclineArgs {
     pub(super) id: Option<String>,
     #[arg(index = 1, value_name = "ID", conflicts_with = "id")]
     pub(super) pr_id: Option<String>,
-    #[arg(long)]
-    pub(super) profile: Option<String>,
     #[arg(long, default_value = "text")]
     pub(super) output: String,
 }
@@ -277,8 +256,6 @@ pub(super) struct PrCommentArgs {
     /// Parent comment ID for replies
     #[arg(long)]
     pub(super) parent: Option<String>,
-    #[arg(long)]
-    pub(super) profile: Option<String>,
     #[arg(long, default_value = "text")]
     pub(super) output: String,
 }
@@ -297,8 +274,6 @@ pub(super) struct PrCommentUpdateArgs {
     pub(super) comment_id: Option<String>,
     #[arg(long, visible_alias = "body")]
     pub(super) content: Option<String>,
-    #[arg(long)]
-    pub(super) profile: Option<String>,
     #[arg(long, default_value = "text")]
     pub(super) output: String,
 }
@@ -319,8 +294,6 @@ pub(super) struct PrCommentsArgs {
     pub(super) output: String,
     #[arg(long, help = "Fetch all comment pages instead of the first page only")]
     pub(super) all: bool,
-    #[arg(long)]
-    pub(super) profile: Option<String>,
     #[arg(long)]
     pub(super) q: Option<String>,
     #[arg(long)]
@@ -348,8 +321,6 @@ pub(super) struct PrDiffArgs {
     #[arg(long)]
     pub(super) name_only: bool,
     /// Authentication profile name
-    #[arg(long)]
-    pub(super) profile: Option<String>,
     /// Output format
     #[arg(long, default_value = "text")]
     pub(super) output: String,
@@ -375,8 +346,6 @@ pub(super) struct PrDiffstatArgs {
     #[arg(long)]
     pub(super) all: bool,
     /// Authentication profile name
-    #[arg(long)]
-    pub(super) profile: Option<String>,
     /// Bitbucket Cloud API filter expression
     #[arg(long)]
     pub(super) q: Option<String>,
@@ -406,8 +375,6 @@ pub(super) struct PrStatusesArgs {
     #[arg(long)]
     pub(super) all: bool,
     #[arg(long)]
-    pub(super) profile: Option<String>,
-    #[arg(long)]
     pub(super) q: Option<String>,
     #[arg(long)]
     pub(super) sort: Option<String>,
@@ -432,8 +399,6 @@ pub(super) struct PrActivityArgs {
     #[arg(long)]
     pub(super) all: bool,
     #[arg(long)]
-    pub(super) profile: Option<String>,
-    #[arg(long)]
     pub(super) q: Option<String>,
     #[arg(long)]
     pub(super) sort: Option<String>,
@@ -457,7 +422,7 @@ fn resolve_pr_id(id: Option<String>, pr_id: Option<String>) -> Option<String> {
     id.or(pr_id)
 }
 
-pub(super) fn map_request(command: Option<PrCommands>) -> Request {
+pub(super) fn map_request(command: Option<PrCommands>, profile: Option<String>) -> Request {
     Request::Pr(match command {
         None => PrRequest::Help,
         Some(PrCommands::List(args)) => PrRequest::List(PrListRequest {
@@ -466,7 +431,7 @@ pub(super) fn map_request(command: Option<PrCommands>) -> Request {
             output: args.output,
             all: args.all,
             limit: args.limit,
-            profile: args.profile,
+            profile,
             state: args.state,
             q: args.q,
             sort: args.sort,
@@ -481,7 +446,7 @@ pub(super) fn map_request(command: Option<PrCommands>) -> Request {
             destination: args.destination,
             description: args.description,
             close_branch: args.close_branch,
-            profile: args.profile,
+            profile,
             output: args.output,
         }),
         Some(PrCommands::Merge(args)) => PrRequest::Merge(PrMergeRequest {
@@ -491,14 +456,14 @@ pub(super) fn map_request(command: Option<PrCommands>) -> Request {
             message: args.message,
             strategy: args.strategy,
             close_branch: args.close_branch,
-            profile: args.profile,
+            profile,
             output: args.output,
         }),
         Some(PrCommands::Get(args)) => PrRequest::Get(PrGetRequest {
             workspace: args.workspace,
             repo: args.repo,
             id: resolve_pr_id(args.id, args.pr_id),
-            profile: args.profile,
+            profile,
             output: args.output,
             fields: args.fields,
             json_fields: args.json_fields,
@@ -511,21 +476,21 @@ pub(super) fn map_request(command: Option<PrCommands>) -> Request {
             description: args.description,
             source: args.source,
             destination: args.destination,
-            profile: args.profile,
+            profile,
             output: args.output,
         }),
         Some(PrCommands::Approve(args)) => PrRequest::Approve(PrApproveRequest {
             workspace: args.workspace,
             repo: args.repo,
             id: resolve_pr_id(args.id, args.pr_id),
-            profile: args.profile,
+            profile,
             output: args.output,
         }),
         Some(PrCommands::Unapprove(args)) => PrRequest::Unapprove(PrUnapproveRequest {
             workspace: args.workspace,
             repo: args.repo,
             id: resolve_pr_id(args.id, args.pr_id),
-            profile: args.profile,
+            profile,
             output: args.output,
         }),
         Some(PrCommands::RequestChanges(args)) => {
@@ -533,7 +498,7 @@ pub(super) fn map_request(command: Option<PrCommands>) -> Request {
                 workspace: args.workspace,
                 repo: args.repo,
                 id: resolve_pr_id(args.id, args.pr_id),
-                profile: args.profile,
+                profile,
                 output: args.output,
             })
         }
@@ -542,7 +507,7 @@ pub(super) fn map_request(command: Option<PrCommands>) -> Request {
                 workspace: args.workspace,
                 repo: args.repo,
                 id: resolve_pr_id(args.id, args.pr_id),
-                profile: args.profile,
+                profile,
                 output: args.output,
             })
         }
@@ -550,7 +515,7 @@ pub(super) fn map_request(command: Option<PrCommands>) -> Request {
             workspace: args.workspace,
             repo: args.repo,
             id: resolve_pr_id(args.id, args.pr_id),
-            profile: args.profile,
+            profile,
             output: args.output,
         }),
         Some(PrCommands::Comment(args)) => PrRequest::Comment(PrCommentRequest {
@@ -559,7 +524,7 @@ pub(super) fn map_request(command: Option<PrCommands>) -> Request {
             id: resolve_pr_id(args.id, args.pr_id),
             content: args.content,
             parent: args.parent,
-            profile: args.profile,
+            profile,
             output: args.output,
         }),
         Some(PrCommands::CommentUpdate(args)) => PrRequest::CommentUpdate(PrCommentUpdateRequest {
@@ -568,7 +533,7 @@ pub(super) fn map_request(command: Option<PrCommands>) -> Request {
             id: resolve_pr_id(args.id, args.pr_id),
             comment_id: args.comment_id,
             content: args.content,
-            profile: args.profile,
+            profile,
             output: args.output,
         }),
         Some(PrCommands::Comments(args)) => PrRequest::Comments(PrCommentsRequest {
@@ -578,7 +543,7 @@ pub(super) fn map_request(command: Option<PrCommands>) -> Request {
             comment_id: args.comment_id,
             output: args.output,
             all: args.all,
-            profile: args.profile,
+            profile,
             q: args.q,
             sort: args.sort,
             fields: args.fields,
@@ -588,7 +553,7 @@ pub(super) fn map_request(command: Option<PrCommands>) -> Request {
             workspace: args.workspace,
             repo: args.repo,
             id: resolve_pr_id(args.id, args.pr_id),
-            profile: args.profile,
+            profile,
             output: args.output,
             name_only: args.name_only,
         }),
@@ -598,7 +563,7 @@ pub(super) fn map_request(command: Option<PrCommands>) -> Request {
             id: resolve_pr_id(args.id, args.pr_id),
             output: args.output,
             all: args.all,
-            profile: args.profile,
+            profile,
             q: args.q,
             sort: args.sort,
             fields: args.fields,
@@ -610,7 +575,7 @@ pub(super) fn map_request(command: Option<PrCommands>) -> Request {
             id: resolve_pr_id(args.id, args.pr_id),
             output: args.output,
             all: args.all,
-            profile: args.profile,
+            profile,
             q: args.q,
             sort: args.sort,
             fields: args.fields,
@@ -622,7 +587,7 @@ pub(super) fn map_request(command: Option<PrCommands>) -> Request {
             id: resolve_pr_id(args.id, args.pr_id),
             output: args.output,
             all: args.all,
-            profile: args.profile,
+            profile,
             q: args.q,
             sort: args.sort,
             fields: args.fields,

@@ -32,8 +32,6 @@ pub(super) struct PipelineListArgs {
     )]
     pub(super) all: bool,
     #[arg(long)]
-    pub(super) profile: Option<String>,
-    #[arg(long)]
     pub(super) branch: Option<String>,
     #[arg(
         long,
@@ -59,8 +57,6 @@ pub(super) struct PipelineGetArgs {
     pub(super) build: Option<String>,
     #[arg(index = 1, value_name = "SELECTOR", conflicts_with_all = ["uuid", "build"])]
     pub(super) selector: Option<String>,
-    #[arg(long)]
-    pub(super) profile: Option<String>,
     #[arg(long, default_value = "text")]
     pub(super) output: String,
     #[arg(long)]
@@ -86,8 +82,6 @@ pub(super) struct PipelineStepsArgs {
     #[arg(long)]
     pub(super) all: bool,
     #[arg(long)]
-    pub(super) profile: Option<String>,
-    #[arg(long)]
     pub(super) sort: Option<String>,
     #[arg(long)]
     pub(super) fields: Option<String>,
@@ -109,8 +103,6 @@ pub(super) struct PipelineLogArgs {
     pub(super) selector: Option<String>,
     #[arg(long)]
     pub(super) step: Option<String>,
-    #[arg(long)]
-    pub(super) profile: Option<String>,
     #[arg(long, default_value = "text")]
     pub(super) output: String,
 }
@@ -123,13 +115,11 @@ pub(super) struct PipelineRunArgs {
     pub(super) repo: Option<String>,
     #[arg(long)]
     pub(super) branch: Option<String>,
-    #[arg(long)]
-    pub(super) profile: Option<String>,
     #[arg(long, default_value = "text")]
     pub(super) output: String,
 }
 
-pub(super) fn map_request(command: Option<PipelineCommands>) -> Request {
+pub(super) fn map_request(command: Option<PipelineCommands>, profile: Option<String>) -> Request {
     Request::Pipeline(match command {
         None => PipelineRequest::Help,
         Some(PipelineCommands::List(args)) => PipelineRequest::List(PipelineListRequest {
@@ -137,7 +127,7 @@ pub(super) fn map_request(command: Option<PipelineCommands>) -> Request {
             repo: args.repo,
             output: args.output,
             all: args.all,
-            profile: args.profile,
+            profile,
             branch: args.branch,
             sort: args.sort,
             fields: args.fields,
@@ -149,7 +139,7 @@ pub(super) fn map_request(command: Option<PipelineCommands>) -> Request {
             uuid: args.uuid,
             build: args.build,
             positional_selector: args.selector,
-            profile: args.profile,
+            profile,
             output: args.output,
             fields: args.fields,
             json_fields: args.json_fields,
@@ -162,7 +152,7 @@ pub(super) fn map_request(command: Option<PipelineCommands>) -> Request {
             positional_selector: args.selector,
             output: args.output,
             all: args.all,
-            profile: args.profile,
+            profile,
             sort: args.sort,
             fields: args.fields,
             json_fields: args.json_fields,
@@ -174,14 +164,14 @@ pub(super) fn map_request(command: Option<PipelineCommands>) -> Request {
             build: args.build,
             positional_selector: args.selector,
             step: args.step,
-            profile: args.profile,
+            profile,
             output: args.output,
         }),
         Some(PipelineCommands::Run(args)) => PipelineRequest::Run(PipelineRunRequest {
             workspace: args.workspace,
             repo: args.repo,
             branch: args.branch,
-            profile: args.profile,
+            profile,
             output: args.output,
         }),
     })
