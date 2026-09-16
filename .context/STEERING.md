@@ -19,8 +19,8 @@
 - Go entrypoints and Go-only workflows are removed after Rust verification passes.
 
 ## Current Phase
-- Phase: post-v0.2.9 — multi-account auth ergonomics
+- Phase: post-v0.2.9 — multi-account auth ergonomics landed, unreleased
 - Owner: Main
-- Tracking: [GitHub Issue #50](https://github.com/azyu/bb-cli/issues/50) — `auth switch` / `auth list` for multi-account use
-- Notes: Named profiles, an active `current`, and per-command `--profile` already existed; the gap was changing the active profile without re-supplying a token, and seeing which profiles exist. Prior art (`gh` 2.101, `glab`, `tea`, `aws`, `kubectl`) shows forge CLIs persist an active account plus a per-command override and expose no env var for selecting a stored account, so no `BB_PROFILE` was added — that also keeps `docs/spec.md` env-precedence rule intact.
+- Tracking: [GitHub Issue #50](https://github.com/azyu/bb-cli/issues/50) (completed, merged as `95b7f4d` via [PR #51](https://github.com/azyu/bb-cli/pull/51)); open: [#52](https://github.com/azyu/bb-cli/issues/52) `--profile` as a global flag
+- Notes: `bb auth switch --profile <name>` and `bb auth list --output table|json` are on `main` but not in a release; the last published version is v0.2.9. Named profiles, an active `current`, and per-command `--profile` already existed; the gap was changing the active profile without re-supplying a token, and seeing which profiles exist. Prior art (`gh` 2.101, `glab`, `tea`, `aws`, `kubectl`) shows forge CLIs persist an active account plus a per-command override and expose no env var for selecting a stored account, so no `BB_PROFILE` was added — that also keeps `docs/spec.md` env-precedence rule intact. Codex review on the PR raised two findings, both accepted and fixed: `auth list` needed `--output json` (it would have been the only `list` command without it), and the resulting JSON mode needed an arm in `wants_json_errors` to emit error envelopes.
 - Previous: v0.2.9 release ([GitHub Issue #49](https://github.com/azyu/bb-cli/issues/49), completed): `v0.2.9` is published from merged main. Release Build run `34924684819` succeeded, all five platform archives plus `checksums.txt` are uploaded, `sha256sum -c checksums.txt` passed for every archive, native macOS ARM64 `bb version` reports `0.2.9+82d4253`, and the workflow synchronized the workspace version and Homebrew formula.
