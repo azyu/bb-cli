@@ -76,6 +76,7 @@ bb auth status
 > bb auth list --output json  # 동일 내용, 기계 판독용
 > bb auth switch --profile work   # 활성 프로필 변경, 토큰 재입력 불필요
 > bb pr list --profile personal   # 이번 명령만 덮어쓰기, 활성 프로필은 그대로
+> bb --profile personal pr list  # 동일; --profile은 어느 위치든 가능
 > ```
 
 ### 3. 자주 쓰는 명령 실행

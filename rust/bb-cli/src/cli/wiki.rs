@@ -17,8 +17,6 @@ pub(super) struct WikiListArgs {
     pub(super) workspace: Option<String>,
     #[arg(long)]
     pub(super) repo: Option<String>,
-    #[arg(long)]
-    pub(super) profile: Option<String>,
     #[arg(long, default_value = "table")]
     pub(super) output: String,
 }
@@ -31,8 +29,6 @@ pub(super) struct WikiGetArgs {
     pub(super) repo: Option<String>,
     #[arg(long)]
     pub(super) page: Option<String>,
-    #[arg(long)]
-    pub(super) profile: Option<String>,
     #[arg(long, default_value = "text")]
     pub(super) output: String,
 }
@@ -51,26 +47,24 @@ pub(super) struct WikiPutArgs {
     pub(super) file: Option<String>,
     #[arg(long)]
     pub(super) message: Option<String>,
-    #[arg(long)]
-    pub(super) profile: Option<String>,
     #[arg(long, default_value = "text")]
     pub(super) output: String,
 }
 
-pub(super) fn map_request(command: Option<WikiCommands>) -> Request {
+pub(super) fn map_request(command: Option<WikiCommands>, profile: Option<String>) -> Request {
     Request::Wiki(match command {
         None => WikiRequest::Help,
         Some(WikiCommands::List(args)) => WikiRequest::List(WikiListRequest {
             workspace: args.workspace,
             repo: args.repo,
-            profile: args.profile,
+            profile,
             output: args.output,
         }),
         Some(WikiCommands::Get(args)) => WikiRequest::Get(WikiGetRequest {
             workspace: args.workspace,
             repo: args.repo,
             page: args.page,
-            profile: args.profile,
+            profile,
             output: args.output,
         }),
         Some(WikiCommands::Put(args)) => WikiRequest::Put(WikiPutRequest {
@@ -80,7 +74,7 @@ pub(super) fn map_request(command: Option<WikiCommands>) -> Request {
             content: args.content,
             file: args.file,
             message: args.message,
-            profile: args.profile,
+            profile,
             output: args.output,
         }),
     })

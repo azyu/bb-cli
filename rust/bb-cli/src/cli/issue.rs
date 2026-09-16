@@ -22,8 +22,6 @@ pub(super) struct IssueListArgs {
     #[arg(long)]
     pub(super) all: bool,
     #[arg(long)]
-    pub(super) profile: Option<String>,
-    #[arg(long)]
     pub(super) q: Option<String>,
     #[arg(long)]
     pub(super) sort: Option<String>,
@@ -47,8 +45,6 @@ pub(super) struct IssueCreateArgs {
     pub(super) kind: Option<String>,
     #[arg(long)]
     pub(super) priority: Option<String>,
-    #[arg(long)]
-    pub(super) profile: Option<String>,
     #[arg(long, default_value = "text")]
     pub(super) output: String,
 }
@@ -71,13 +67,11 @@ pub(super) struct IssueUpdateArgs {
     pub(super) kind: Option<String>,
     #[arg(long)]
     pub(super) priority: Option<String>,
-    #[arg(long)]
-    pub(super) profile: Option<String>,
     #[arg(long, default_value = "text")]
     pub(super) output: String,
 }
 
-pub(super) fn map_request(command: Option<IssueCommands>) -> Request {
+pub(super) fn map_request(command: Option<IssueCommands>, profile: Option<String>) -> Request {
     Request::Issue(match command {
         None => IssueRequest::Help,
         Some(IssueCommands::List(args)) => IssueRequest::List(IssueListRequest {
@@ -85,7 +79,7 @@ pub(super) fn map_request(command: Option<IssueCommands>) -> Request {
             repo: args.repo,
             output: args.output,
             all: args.all,
-            profile: args.profile,
+            profile,
             q: args.q,
             sort: args.sort,
             fields: args.fields,
@@ -98,7 +92,7 @@ pub(super) fn map_request(command: Option<IssueCommands>) -> Request {
             state: args.state,
             kind: args.kind,
             priority: args.priority,
-            profile: args.profile,
+            profile,
             output: args.output,
         }),
         Some(IssueCommands::Update(args)) => IssueRequest::Update(IssueUpdateRequest {
@@ -110,7 +104,7 @@ pub(super) fn map_request(command: Option<IssueCommands>) -> Request {
             state: args.state,
             kind: args.kind,
             priority: args.priority,
-            profile: args.profile,
+            profile,
             output: args.output,
         }),
     })

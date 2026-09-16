@@ -41,7 +41,7 @@
   - username: `--username`, then `BITBUCKET_USERNAME`
   - base URL: `--base-url`, else default
 - Profile selection precedence for command execution:
-  - `--profile <name>` on the command
+  - global `--profile <name>`, accepted before or after the subcommand
   - else the active profile name stored in config (`current`)
   - `auth login` sets the profile it wrote as active; `auth switch` changes the active profile without re-supplying credentials
 - Environment-variable precedence is limited to config-path resolution and `auth login` input resolution; general command execution does not have a global env-over-config override layer. In particular there is no environment variable that selects a stored profile.
