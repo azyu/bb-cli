@@ -1,11 +1,17 @@
 use std::io::{BufRead, Write};
 
 use crate::config;
+use crate::config::Profile;
 use crate::error::CliError;
 use crate::render;
-use crate::{AuthLoginRequest, AuthRequest, AuthStatusRequest};
+use crate::{
+    AuthListRequest, AuthLoginRequest, AuthRequest, AuthStatusRequest, AuthSwitchRequest,
+    ListOutput,
+};
 
 use super::STDIN_TOKEN_SENTINEL;
+use super::support::parse_list_output;
+use serde_json::{Value, json};
 
 pub(super) fn handle_auth<R: BufRead, O: Write>(
     request: &AuthRequest,
@@ -17,6 +23,83 @@ pub(super) fn handle_auth<R: BufRead, O: Write>(
         AuthRequest::Login(request) => handle_auth_login(request, stdin, stdout),
         AuthRequest::Status(request) => handle_auth_status(request, stdout),
         AuthRequest::Logout(request) => handle_auth_logout(request, stdout),
+        AuthRequest::Switch(request) => handle_auth_switch(request, stdout),
+        AuthRequest::List(request) => handle_auth_list(request, stdout),
+    }
+}
+
+fn handle_auth_switch<O: Write>(
+    request: &AuthSwitchRequest,
+    stdout: &mut O,
+) -> Result<(), CliError> {
+    let mut config = config::load()?;
+    let switched = config.switch_profile(&request.profile)?;
+    config::save(&config)?;
+
+    writeln!(stdout, "active profile: {switched:?}")?;
+    Ok(())
+}
+
+fn handle_auth_list<O: Write>(request: &AuthListRequest, stdout: &mut O) -> Result<(), CliError> {
+    let output = parse_list_output(&request.output)?;
+    let config = config::load()?;
+    if config.profiles.is_empty() {
+        return Err(CliError::NotLoggedIn);
+    }
+
+    let rows: Vec<(&String, &Profile, bool, &'static str)> = config
+        .profiles
+        .iter()
+        .map(|(name, profile)| {
+            let mode = if profile.username.trim().is_empty() {
+                "bearer"
+            } else {
+                "basic"
+            };
+            (name, profile, *name == config.current, mode)
+        })
+        .collect();
+
+    match output {
+        ListOutput::Json => {
+            let values: Vec<Value> = rows
+                .iter()
+                .map(|(name, profile, active, mode)| {
+                    json!({
+                        "name": name,
+                        "active": active,
+                        "auth": mode,
+                        "username": profile.username.trim(),
+                        "base_url": profile.base_url,
+                    })
+                })
+                .collect();
+            render::print_json(stdout, &values)
+        }
+        ListOutput::Table => {
+            let labels: Vec<String> = rows
+                .iter()
+                .map(|(_, profile, _, mode)| {
+                    if *mode == "bearer" {
+                        "bearer token".to_string()
+                    } else {
+                        format!("basic ({})", profile.username.trim())
+                    }
+                })
+                .collect();
+            let name_width = rows.iter().map(|(name, ..)| name.len()).max().unwrap_or(0);
+            let auth_width = labels.iter().map(String::len).max().unwrap_or(0);
+
+            for ((name, profile, active, _), auth) in rows.iter().zip(&labels) {
+                let marker = if *active { "*" } else { " " };
+                let base_url = &profile.base_url;
+                writeln!(
+                    stdout,
+                    "{marker} {name:name_width$}  {auth:auth_width$}  {base_url}"
+                )?;
+            }
+            Ok(())
+        }
     }
 }
 

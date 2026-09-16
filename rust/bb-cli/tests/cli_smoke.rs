@@ -87,6 +87,156 @@ fn auth_status_without_login_writes_error_to_stderr() {
 }
 
 #[test]
+fn auth_switch_changes_active_profile_without_reentering_token() {
+    let temp = tempdir().unwrap();
+    let config_path = temp.path().join("config.json");
+
+    for profile in ["work", "personal"] {
+        let output = bb_command()
+            .args([
+                "auth",
+                "login",
+                "--profile",
+                profile,
+                "--username",
+                profile,
+                "--token",
+                "token-123",
+            ])
+            .env("BB_CONFIG_PATH", &config_path)
+            .output()
+            .expect("command should run");
+        assert!(output.status.success(), "login {profile} should succeed");
+    }
+
+    // Last login wins, so "personal" is active before the switch.
+    let listed = bb_command()
+        .args(["auth", "list"])
+        .env("BB_CONFIG_PATH", &config_path)
+        .output()
+        .expect("command should run");
+    assert!(listed.status.success());
+    let listed = String::from_utf8(listed.stdout).expect("stdout should be utf-8");
+    assert!(listed.contains("* personal"), "got: {listed}");
+    assert!(listed.contains("  work"), "got: {listed}");
+    assert!(!listed.contains("token-123"), "list must not leak tokens");
+
+    let switched = bb_command()
+        .args(["auth", "switch", "--profile", "work"])
+        .env("BB_CONFIG_PATH", &config_path)
+        .output()
+        .expect("command should run");
+    assert!(switched.status.success());
+
+    let status = bb_command()
+        .args(["auth", "status"])
+        .env("BB_CONFIG_PATH", &config_path)
+        .output()
+        .expect("command should run");
+    assert!(status.status.success());
+    let status = String::from_utf8(status.stdout).expect("stdout should be utf-8");
+    assert!(status.contains("Profile: work"), "got: {status}");
+
+    let missing = bb_command()
+        .args(["auth", "switch", "--profile", "ghost"])
+        .env("BB_CONFIG_PATH", &config_path)
+        .output()
+        .expect("command should run");
+    assert!(!missing.status.success());
+    let stderr = String::from_utf8(missing.stderr).expect("stderr should be utf-8");
+    assert!(stderr.contains("not found"), "got: {stderr}");
+}
+
+#[test]
+fn auth_list_json_exposes_active_flag_and_hides_tokens() {
+    let temp = tempdir().unwrap();
+    let config_path = temp.path().join("config.json");
+
+    for (profile, username) in [("work", "dev@example.com"), ("bot", "")] {
+        let mut command = bb_command();
+        command.args([
+            "auth",
+            "login",
+            "--profile",
+            profile,
+            "--token",
+            "token-123",
+        ]);
+        if !username.is_empty() {
+            command.args(["--username", username]);
+        }
+        let output = command
+            .env("BB_CONFIG_PATH", &config_path)
+            .output()
+            .expect("command should run");
+        assert!(output.status.success(), "login {profile} should succeed");
+    }
+
+    // Make the active profile explicit so this test does not depend on login ordering.
+    let switched = bb_command()
+        .args(["auth", "switch", "--profile", "work"])
+        .env("BB_CONFIG_PATH", &config_path)
+        .output()
+        .expect("command should run");
+    assert!(switched.status.success());
+
+    let output = bb_command()
+        .args(["auth", "list", "--output", "json"])
+        .env("BB_CONFIG_PATH", &config_path)
+        .output()
+        .expect("command should run");
+    assert!(output.status.success());
+
+    let stdout = String::from_utf8(output.stdout).expect("stdout should be utf-8");
+    assert!(!stdout.contains("token-123"), "json must not leak tokens");
+
+    let parsed: serde_json::Value = serde_json::from_str(&stdout).expect("valid json");
+    let rows = parsed.as_array().expect("json array");
+    assert_eq!(rows.len(), 2);
+
+    // Profiles are ordered by name, so "bot" comes first.
+    assert_eq!(rows[0]["name"], "bot");
+    assert_eq!(rows[0]["active"], false);
+    assert_eq!(rows[0]["auth"], "bearer");
+    assert_eq!(rows[0]["username"], "");
+
+    assert_eq!(rows[1]["name"], "work");
+    assert_eq!(rows[1]["active"], true);
+    assert_eq!(rows[1]["auth"], "basic");
+    assert_eq!(rows[1]["username"], "dev@example.com");
+    assert_eq!(rows[1]["base_url"], "https://api.bitbucket.org/2.0");
+    assert!(rows[1].get("token").is_none(), "token field must not exist");
+}
+
+#[test]
+fn auth_list_json_emits_error_envelope_when_no_profiles_exist() {
+    let temp = tempdir().unwrap();
+    let output = bb_command()
+        .args(["auth", "list", "--output", "json"])
+        .env("BB_CONFIG_PATH", temp.path().join("config.json"))
+        .output()
+        .expect("command should run");
+
+    assert!(!output.status.success());
+
+    let stdout = String::from_utf8(output.stdout).expect("stdout should be utf-8");
+    let parsed: serde_json::Value =
+        serde_json::from_str(&stdout).expect("json mode must emit a JSON error envelope on stdout");
+    assert_eq!(parsed["error"]["code"], "not_logged_in");
+
+    // Table mode keeps the plain-text error on stderr.
+    let output = bb_command()
+        .args(["auth", "list"])
+        .env("BB_CONFIG_PATH", temp.path().join("config.json"))
+        .output()
+        .expect("command should run");
+    assert!(!output.status.success());
+    assert!(output.stdout.is_empty());
+    let stderr = String::from_utf8(output.stderr).expect("stderr should be utf-8");
+    assert!(stderr.contains("not logged in"));
+}
+
+#[test]
 fn repo_list_json_reads_config_and_calls_server() {
     let server = MockServer::start();
     let repos = server.mock(|when, then| {

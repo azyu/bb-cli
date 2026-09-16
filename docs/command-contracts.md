@@ -55,6 +55,30 @@ This document is the contract baseline for `bb` command behavior.
 - Failure behavior:
   - No active profile -> non-zero exit with login guidance
 
+### `bb auth list`
+- Purpose: List saved profiles so the active one and the switch targets are visible without reading the config file.
+- Optional flags:
+  - `--output` (`table` default, or `json`)
+- Output:
+  - Table: one row per profile as `<marker> <name>  <auth mode>  <base URL>`, where the marker is `*` for the active profile and a space otherwise
+  - JSON: an array of `{name, active, auth, username, base_url}` objects, where `auth` is `bearer` or `basic`
+  - Rows are ordered by profile name in both modes
+  - Token values are never printed in either mode
+- Failure behavior:
+  - No saved profiles -> non-zero exit with login guidance
+  - Unsupported `--output` value -> non-zero exit
+
+### `bb auth switch`
+- Purpose: Change the active profile without re-supplying a token.
+- Required inputs:
+  - `--profile <name>` (the profile to make active)
+- Output:
+  - Human: new active profile name
+- Failure behavior:
+  - Unknown profile -> non-zero exit with profile-not-found message, leaving the active profile unchanged
+  - Missing `--profile` -> clap parse error
+  - Config write failure -> non-zero exit
+
 ### `bb auth logout`
 - Purpose: Remove a saved profile credential and clear/switch active profile.
 - Optional flags:

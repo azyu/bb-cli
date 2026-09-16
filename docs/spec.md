@@ -40,7 +40,11 @@
   - token: `--token <value>`, bare `--token`/`--with-token` from stdin, then `BITBUCKET_TOKEN`
   - username: `--username`, then `BITBUCKET_USERNAME`
   - base URL: `--base-url`, else default
-- Environment-variable precedence is limited to config-path resolution and `auth login` input resolution; general command execution does not have a global env-over-config override layer.
+- Profile selection precedence for command execution:
+  - `--profile <name>` on the command
+  - else the active profile name stored in config (`current`)
+  - `auth login` sets the profile it wrote as active; `auth switch` changes the active profile without re-supplying credentials
+- Environment-variable precedence is limited to config-path resolution and `auth login` input resolution; general command execution does not have a global env-over-config override layer. In particular there is no environment variable that selects a stored profile.
 
 ## Repo Inference
 - Repo-scoped commands may infer missing `--workspace` and `--repo` from local Git `remote.origin.url`.

@@ -4,7 +4,8 @@ use crate::error::CliError;
 use crate::render::{self, ErrorEnvelope, ErrorPayload};
 use crate::version;
 use crate::{
-    CompletionShell, IssueRequest, PipelineRequest, PrRequest, RepoRequest, Request, WikiRequest,
+    AuthRequest, CompletionShell, IssueRequest, PipelineRequest, PrRequest, RepoRequest, Request,
+    WikiRequest,
 };
 
 mod api;
@@ -111,6 +112,7 @@ fn emit_error<O: Write, E: Write>(
 fn wants_json_errors(request: &Request) -> bool {
     match request {
         Request::Api(_) => true,
+        Request::Auth(AuthRequest::List(req)) => req.output.trim().eq_ignore_ascii_case("json"),
         Request::Repo(RepoRequest::List(req)) => req.output.trim().eq_ignore_ascii_case("json"),
         Request::Pr(PrRequest::List(req)) => req.output.trim().eq_ignore_ascii_case("json"),
         Request::Pr(PrRequest::Create(req)) => req.output.trim().eq_ignore_ascii_case("json"),

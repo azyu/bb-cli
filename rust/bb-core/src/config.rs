@@ -93,6 +93,17 @@ impl Config {
         Ok((profile, name.to_string()))
     }
 
+    pub fn switch_profile(&mut self, name: &str) -> Result<String, CliError> {
+        let target = name.trim();
+        if target.is_empty() {
+            return Err(CliError::InvalidInput("--profile is required".to_string()));
+        }
+
+        let (_, resolved) = self.active_profile(Some(target))?;
+        self.current = resolved.clone();
+        Ok(resolved)
+    }
+
     pub fn remove_profile(&mut self, name: Option<&str>) -> (String, bool) {
         let target = name
             .map(str::trim)
@@ -236,6 +247,28 @@ mod tests {
             paths.file,
             PathBuf::from("/tmp/bb-home/.config/bb/config.json")
         );
+    }
+
+    #[test]
+    fn switch_profile_sets_current_and_rejects_unknown() {
+        let mut config = Config::default();
+        config.set_profile_with_auth("work", "", "w", None);
+        config.set_profile_with_auth("personal", "", "p", None);
+        assert_eq!(config.current, "personal");
+
+        let switched = config.switch_profile("work").expect("switch succeeds");
+        assert_eq!(switched, "work");
+        assert_eq!(config.current, "work");
+
+        let error = config.switch_profile("ghost").expect_err("unknown profile");
+        assert_eq!(error.message(), "profile \"ghost\" not found");
+        assert_eq!(
+            config.current, "work",
+            "failed switch must not move current"
+        );
+
+        let error = config.switch_profile("  ").expect_err("blank profile");
+        assert_eq!(error.message(), "--profile is required");
     }
 
     #[test]

@@ -65,6 +65,19 @@ bb auth login --username "<bitbucket-email>" --token "<your-token>"
 bb auth status
 ```
 
+> [!TIP]
+> **Multiple accounts.** Give each account a profile name, then switch between them or
+> override the active one per command.
+> ```bash
+> bb auth login --profile work     --username "<work-email>"     --token "<token>"
+> bb auth login --profile personal --username "<personal-email>" --token "<token>"
+>
+> bb auth list                 # saved profiles, active one marked with *
+> bb auth list --output json  # same, machine-readable
+> bb auth switch --profile work   # change the active profile, no token needed
+> bb pr list --profile personal   # one-off override, active profile unchanged
+> ```
+
 ### 3. Run common commands
 
 Inside a Bitbucket repository, `bb` can infer `--workspace` and `--repo` from `remote.origin.url`.
@@ -94,7 +107,7 @@ bb completion zsh
 
 | Group | Subcommands |
 |-------|-------------|
-| `bb auth` | `login`, `status`, `logout` |
+| `bb auth` | `login`, `status`, `list`, `switch`, `logout` |
 | `bb repo` | `list` |
 | `bb pr` | `list`, `get`, `create`, `update`, `merge`, `approve`, `unapprove`, `request-changes`, `remove-request-changes`, `decline`, `comment`, `comment-update`, `comments`, `diff`, `diffstat`, `statuses`, `activity` |
 | `bb pipeline` | `list`, `get`, `steps`, `log`, `run` |
