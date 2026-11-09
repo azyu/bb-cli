@@ -57,9 +57,8 @@ Core API groups for CLI MVP:
 - Repositories: https://developer.atlassian.com/cloud/bitbucket/rest/api-group-repositories/
 - Pull Requests: https://developer.atlassian.com/cloud/bitbucket/rest/api-group-pullrequests/
 - Pipelines: https://developer.atlassian.com/cloud/bitbucket/rest/api-group-pipelines/
-- Issues: https://developer.atlassian.com/cloud/bitbucket/rest/api-group-issue-tracker/
-- Wiki (git-based operations): https://support.atlassian.com/bitbucket-cloud/docs/set-up-and-use-wiki-in-bitbucket-cloud/
-- Wiki clone/update reference: https://support.atlassian.com/bitbucket-cloud/docs/view-and-configure-a-repositorys-wiki/
+- Reports (Code Insights): https://developer.atlassian.com/cloud/bitbucket/rest/api-group-reports/
+- Issues and Wiki: no longer applicable. Bitbucket Cloud removed native Issues and Wikis on 2026-08-20 (issue endpoints return `410 Gone`, wiki Git remotes return `Not Found`); `bb issue` and `bb wiki` were removed in #58. Announcement: https://community.atlassian.com/forums/Bitbucket-articles/Announcing-sunset-of-Bitbucket-Issues-and-Wikis/ba-p/3193882
 
 ## 4) Technical Requirements for Bitbucket CLI (MVP)
 
@@ -69,8 +68,7 @@ Recommended top-level commands:
 - `bb repo`
 - `bb pr`
 - `bb pipeline`
-- `bb wiki`
-- `bb issue`
+- `bb commit`
 - `bb api`
 - `bb completion`
 
@@ -89,9 +87,6 @@ Design note:
 - Avoid designing around deprecated auth paths as default behavior.
 - API token usage should support Basic auth (`username/email + token`).
 - Keep Bearer token mode for token types that require it.
-- For wiki Git operations, auth user may differ from REST auth user:
-  - Personal API token profiles (REST uses email) should use `x-bitbucket-api-token-auth` for wiki Git.
-  - Access-token-style profiles should use `x-token-auth` for wiki Git.
 
 ### 4.3 API Client Behavior
 Required client capabilities:
@@ -145,9 +140,6 @@ Operational UX:
 - `GET /repositories/{workspace}/{repo_slug}/commit/{commit}/reports`
 - `GET|PUT|DELETE /repositories/{workspace}/{repo_slug}/commit/{commit}/reports/{reportId}`
   - The published OpenAPI lists only `read:repository:bitbucket` for all four operations, including `PUT` and `DELETE`.
-- `GET /repositories/{workspace}/{repo_slug}/issues`
-- Wiki operations via Git remote:
-  - `https://bitbucket.org/{workspace}/{repo_slug}.git/wiki`
 
 Command naming rule: prefer Bitbucket API-aligned names (`get`, `update`, `request-changes`, `remove-request-changes`). GitHub CLI aliases accepted: `view`→`get`, `edit`→`update`, `close`→`decline`, `checks`→`statuses`.
 
@@ -165,16 +157,12 @@ General developer preset (recommended):
 - `read:repository:bitbucket`
 - `read:pullrequest:bitbucket`
 - `read:pipeline:bitbucket`
-- `read:issue:bitbucket`
-- `read:wiki:bitbucket`
 - `read:user:bitbucket`
 - `read:workspace:bitbucket`
 
 Add only when needed:
 - PR create/update: `write:pullrequest:bitbucket`
 - Pipeline run/update: `write:pipeline:bitbucket`
-- Issue create/update: `write:issue:bitbucket`
-- Wiki create/update: `write:wiki:bitbucket`
 - During development, run write-scope flows against a dedicated test repository/workspace first.
 
 Avoid by default:
@@ -199,8 +187,6 @@ Rust migration decisions:
   - `bb pr list|create|merge|get|update|approve|unapprove|request-changes|remove-request-changes|decline|comment|comment-update|comments|diff|diffstat|statuses|activity`
   - `bb pipeline list|get|steps|log|run`
   - `bb commit report list|get|put|delete`
-  - `bb issue list|create|update`
-  - `bb wiki list|get|put`
   - `bb completion`
   - `bb version`
 - PR command naming follows Bitbucket API titles. GitHub CLI aliases accepted (see §5 naming rule).

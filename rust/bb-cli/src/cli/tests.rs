@@ -456,3 +456,16 @@ fn pipeline_get_rejects_uuid_and_build_together() {
         .expect_err("parse should fail");
     assert_eq!(error.kind(), clap::error::ErrorKind::ArgumentConflict);
 }
+
+#[test]
+fn removed_issue_and_wiki_groups_are_parse_errors() {
+    // Bitbucket Cloud removed native Issues and Wikis on 2026-08-20 (#58).
+    for group in ["issue", "wiki"] {
+        let error = parse_from(["bb", group, "list"]).expect_err("removed group should not parse");
+        assert_eq!(
+            error.kind(),
+            clap::error::ErrorKind::InvalidSubcommand,
+            "{group}"
+        );
+    }
+}

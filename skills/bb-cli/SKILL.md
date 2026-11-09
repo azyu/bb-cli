@@ -1,6 +1,6 @@
 ---
 name: bb-cli
-description: "Bitbucket Cloud: inspect and operate repos, pull requests, pipelines, issues, wiki pages, and raw REST endpoints through the local bb CLI."
+description: "Bitbucket Cloud: inspect and operate repos, pull requests, pipelines, commit reports (Code Insights), and raw REST endpoints through the local bb CLI."
 metadata:
   openclaw:
     category: "developer-tools"
@@ -22,7 +22,7 @@ bb version
 
 - Prefer `--output json` for automation.
 - Use `--json-fields` only on commands that explicitly support it.
-- Outside a cloned Bitbucket repo, pass `-R <workspace>/<repo>` or explicit `--workspace` and `--repo`; `-R` conflicts with the two explicit flags. `-R` is accepted only by the repository-scoped groups (`pr`, `pipeline`, `issue`, `wiki`) — `repo list` takes `--workspace` alone, and `api`/`auth` reject it.
+- Outside a cloned Bitbucket repo, pass `-R <workspace>/<repo>` or explicit `--workspace` and `--repo`; `-R` conflicts with the two explicit flags. `-R` is accepted only by the repository-scoped groups (`pr`, `pipeline`, `commit report`) — `repo list` takes `--workspace` alone, and `api`/`auth` reject it.
 - Before any write operation, inspect the exact subcommand help in the current session and use only documented flags.
 - Existing-PR commands accept positional `ID` or `--id`; passing both is an error.
 - For `bb pr comments`, `ID`/`--id` always mean the pull request ID. Use `--comment-id` to target a single comment; never pass a comment ID via `--id`.
@@ -38,7 +38,8 @@ bb version
 - Raw `bb api repositories/<workspace>/<repo>/pipelines` calls do not inherit that default. Pass `--sort=-created_on` there when inspecting recent pipelines, and `--paginate` when the full history is required.
 - `bb pipeline list` filters by branch with `--branch <name>` (sent as the `target.branch` query parameter); the pipelines endpoint ignores `q`.
 - Use `bb pr comment --parent <comment-id>` for PR comment replies.
-- Wiki commands use the repo's wiki Git remote, not a REST endpoint.
+- `bb commit report` requires `--commit <sha>` (hex only; local `HEAD` is never assumed). `--id` accepts only ASCII letters, digits, `-` `_` `.` `~` `{` `}`; for any other report id use `bb api`.
+- There is no `bb issue` or `bb wiki`: Bitbucket Cloud removed native Issues and Wikis on 2026-08-20, and `bb api .../issues` returns `410 Gone`.
 - Runtime failures in JSON mode return JSON error envelopes; parse/help failures stay text.
 
 ## Command Groups
@@ -63,13 +64,9 @@ bb version
 
 - `list`, `get`, `run`, `steps`, `log`
 
-### issue
+### commit
 
-- `list`, `create`, `update`
-
-### wiki
-
-- `list`, `get`, `put`
+- `report list`, `report get`, `report put`, `report delete` - Code Insights reports on a commit.
 
 ### api
 
@@ -102,7 +99,7 @@ bb pr comment --help
 bb pr get --help
 bb pr comments --help
 bb pipeline log --help
-bb wiki put --help
+bb commit report put --help
 ```
 
 ## Common Calls
@@ -121,15 +118,13 @@ bb pr comments 123 --comment-id 456 --workspace acme --repo widgets --output jso
 bb pipeline list --workspace acme --repo widgets --output json
 bb pipeline get "{pipeline-uuid}" --workspace acme --repo widgets --output json
 bb pipeline log "{pipeline-uuid}" --workspace acme --repo widgets --step "{step-uuid}"
-bb issue list --workspace acme --repo widgets --output json
-bb wiki get --workspace acme --repo widgets --page Home.md
+bb commit report list --workspace acme --repo widgets --commit 110daa97 --output json
 
 # Write operations
 bb pr create --workspace acme --repo widgets --title "Add widget support" --source feature/widgets --destination main
 bb pr comment 123 --workspace acme --repo widgets --content "Reply text" --parent 456
 bb pr create --workspace acme --repo widgets --title "Add widget support" --source feature/widgets --destination main --description "$(cat ./pr-body.md)"
-bb issue create --workspace acme --repo widgets --title "Broken widget" --kind bug --priority major --output json
-bb wiki put --workspace acme --repo widgets --page Home.md --file ./docs/home.md
+bb commit report put --workspace acme --repo widgets --commit 110daa97 --id mysystem-001 --input ./report.json
 
 # Escape hatch
 bb api repositories/acme/widgets/pullrequests --paginate

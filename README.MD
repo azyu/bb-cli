@@ -10,7 +10,7 @@
 
 ## Features
 
-- `gh`-style command groups for repos, PRs, pipelines, commit reports, issues, wiki, and raw API calls
+- `gh`-style command groups for repos, PRs, pipelines, commit reports, and raw API calls
 - Repo inference from local Bitbucket `remote.origin.url`
 - Human-friendly text/table output plus stable JSON output for automation
 - Shell completion for bash, zsh, fish, and PowerShell
@@ -115,8 +115,6 @@ bb completion zsh
 | `bb pr` | `list`, `get`, `create`, `update`, `merge`, `approve`, `unapprove`, `request-changes`, `remove-request-changes`, `decline`, `comment`, `comment-update`, `comments`, `diff`, `diffstat`, `statuses`, `activity` |
 | `bb pipeline` | `list`, `get`, `steps`, `log`, `run` |
 | `bb commit` | `report list`, `report get`, `report put`, `report delete` |
-| `bb issue` | `list`, `create`, `update` |
-| `bb wiki` | `list`, `get`, `put` |
 | `bb api` | raw Bitbucket Cloud endpoint access |
 | `bb completion` | `bash`, `zsh`, `fish`, `powershell` |
 | `bb version` | build metadata |
@@ -162,8 +160,6 @@ Recommended read-only baseline:
 - `read:repository:bitbucket`
 - `read:pullrequest:bitbucket`
 - `read:pipeline:bitbucket`
-- `read:issue:bitbucket`
-- `read:wiki:bitbucket`
 - `read:user:bitbucket`
 - `read:workspace:bitbucket`
 
@@ -180,10 +176,6 @@ Add `write:*` scopes only for mutating commands.
 | `bb pipeline list/get/steps/log` | `read:repository`, `read:pipeline` |
 | `bb pipeline run` | `read:repository`, `read:pipeline`, `write:pipeline` |
 | `bb commit report list/get/put/delete` | `read:repository` |
-| `bb wiki list/get` | `read:repository`, `read:wiki` |
-| `bb wiki put` | `read:repository`, `read:wiki`, `write:wiki` |
-| `bb issue list` | `read:repository`, `read:issue` |
-| `bb issue create/update` | `read:repository`, `read:issue`, `write:issue` |
 | `bb api` | varies by endpoint |
 | `bb completion`, `bb version` | none |
 

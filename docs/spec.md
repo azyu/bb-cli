@@ -19,7 +19,8 @@
 
 ## Supported Scope
 - Bitbucket Cloud only.
-- Supported top-level command groups are `auth`, `api`, `repo`, `pr`, `pipeline`, `commit`, `issue`, `wiki`, `completion`, and `version`.
+- Supported top-level command groups are `auth`, `api`, `repo`, `pr`, `pipeline`, `commit`, `completion`, and `version`.
+- Bitbucket Cloud removed native Issues and Wikis on 2026-08-20 (issue endpoints return `410 Gone`, wiki Git remotes return `Not Found`); `bb issue` and `bb wiki` were removed in #58.
 - Local Git workflow helpers such as `bb pr checkout` remain out of scope.
 - Detailed subcommand contracts live only in `docs/command-contracts.md`.
 
@@ -84,18 +85,6 @@
 - Surface API failures with HTTP status and short response-body context.
 - Pipeline build-number selectors (`--build <n>`, numeric positional) resolve through the numeric `{pipeline}` path segment (`GET /repositories/{workspace}/{repo_slug}/pipelines/{build_number}`) — observed Bitbucket Cloud behavior, not an officially documented contract; the pipelines list endpoint ignores `q=build_number`.
 - The build lookup verifies the returned `build_number` matches the request (mismatch is an internal error); a nonexistent build surfaces the API 404 as a plain API failure, same as UUID selectors.
-
-## Wiki Rules
-- Wiki commands use the wiki Git repository over HTTPS, not REST endpoints.
-- Remote URLs include only the auth username, never the token.
-- Provide the token to Git through `GIT_ASKPASS`.
-- Wiki auth username mapping:
-  - empty profile username -> `x-token-auth`
-  - email-like username -> `x-bitbucket-api-token-auth`
-  - any other username -> unchanged
-- If the API host is `api.bitbucket.org`, normalize the wiki host to `bitbucket.org`.
-- Wiki page paths must reject absolute paths and parent-directory traversal.
-- `wiki put` accepts either `--content` or `--file`, not both.
 
 ## Build and Release
 - Cargo is the primary build surface.
