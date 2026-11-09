@@ -131,15 +131,16 @@ fn validate_commit(value: Option<&str>) -> Result<&str, CliError> {
     Ok(commit)
 }
 
-/// The report id is a path segment; reject characters that would change the request URL.
+/// The report id is a URL path segment, and reqwest::Url treats '\' as '/' and resolves
+/// dot segments, so a blocklist can be bypassed (`..\..\widgets` would retarget a DELETE at
+/// the repository). Allow only characters that cannot change the path.
 fn validate_report_id(value: Option<&str>) -> Result<&str, CliError> {
     let id = required_string("--id is required", value)?;
-    if id
-        .chars()
-        .any(|ch| ch.is_whitespace() || matches!(ch, '/' | '?' | '#' | '%'))
-    {
+    let allowed =
+        |ch: char| ch.is_ascii_alphanumeric() || matches!(ch, '-' | '_' | '.' | '~' | '{' | '}');
+    if !id.chars().all(allowed) || id == "." || id == ".." {
         return Err(CliError::InvalidInput(format!(
-            "--id must not contain whitespace, '/', '?', '#', or '%': {id}"
+            "--id may only contain ASCII letters, digits, '-', '_', '.', '~', '{{', '}}' and must not be '.' or '..': {id} (use bb api for other ids)"
         )));
     }
     Ok(id)
@@ -163,7 +164,19 @@ mod tests {
             validate_report_id(Some("pr-risk-tier-trial")).unwrap(),
             "pr-risk-tier-trial"
         );
-        for bad in ["a/b", "a?b", "a#b", "a%2Fb", "a b"] {
+        assert_eq!(validate_report_id(Some("{3f2a-11}")).unwrap(), "{3f2a-11}");
+        for bad in [
+            "a/b",
+            "a?b",
+            "a#b",
+            "a%2Fb",
+            "a b",
+            r"..\..\widgets",
+            r"a\b",
+            ".",
+            "..",
+            "a:b",
+        ] {
             assert!(validate_report_id(Some(bad)).is_err(), "{bad} should fail");
         }
         assert!(validate_report_id(Some("  ")).is_err());

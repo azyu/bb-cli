@@ -2814,3 +2814,40 @@ fn commit_report_delete_rejects_non_hex_commit_before_any_request() {
     assert_eq!(body["error"]["code"], "invalid_input");
     any.assert_hits(0);
 }
+
+#[test]
+fn commit_report_delete_rejects_path_traversal_ids_before_any_request() {
+    // reqwest::Url treats '\' as '/' for http(s) and resolves dot segments, so these ids
+    // would retarget the DELETE at the repository itself.
+    for id in [r"..\..\..\..\widgets", "..", "."] {
+        let server = MockServer::start();
+        let any = server.mock(|when, then| {
+            when.any_request();
+            then.status(204);
+        });
+        let (_temp, config_path) = report_config(&server);
+
+        let output = bb_command()
+            .args([
+                "commit",
+                "report",
+                "delete",
+                "-R",
+                "acme/widgets",
+                "--commit",
+                "110daa97",
+                "--id",
+                id,
+                "--output",
+                "json",
+            ])
+            .env("BB_CONFIG_PATH", &config_path)
+            .output()
+            .expect("command should run");
+
+        assert!(!output.status.success(), "{id} should be rejected");
+        let body: serde_json::Value = serde_json::from_slice(&output.stdout).expect("json error");
+        assert_eq!(body["error"]["code"], "invalid_input", "{id}");
+        any.assert_hits(0);
+    }
+}

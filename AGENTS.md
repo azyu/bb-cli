@@ -170,3 +170,5 @@ Rules:
 - Bitbucket Cloud and Data Center APIs differ significantly; do not mix them accidentally.
 - For list endpoints, rely on API-provided pagination (`next`) instead of hand-built page URLs.
 - Keep auth design aligned with current Bitbucket Cloud recommendations; avoid deprecated defaults.
+- Validate user input that becomes a URL path segment with an allowlist, not a blocklist. `Client::send_request` parses the path with `reqwest::Url`, which treats `\` as `/` for http(s) and resolves `.`/`..` segments, so a blocklist of `/ ? # %` still let `bb commit report delete --id '..\..\..\..\widgets'` send `DELETE /repositories/acme/widgets` (found in review of PR #61). Numeric ids and UUID parsers are already safe; free-form ids and keys are not.
+- A bare `rust/target/debug/bb` run uses your real `~/.config/bb/config.json` profile and hits the live API, including write methods. When smoke-testing by hand, set `BB_CONFIG_PATH` to a config whose `base_url` points at a local mock, as the `cli_smoke` tests do.

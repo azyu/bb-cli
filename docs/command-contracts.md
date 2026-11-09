@@ -560,7 +560,7 @@ Code Insights reports attached to a commit. `bb commit` and `bb commit report` w
 Shared flags for every `bb commit report` subcommand:
 - `--workspace`, `--repo` unless both can be inferred from local Bitbucket `remote.origin.url` (or `-R WORKSPACE/REPO`)
 - `--commit <SHA>` (required): hexadecimal commit hash. Local `HEAD` is never used as a default, so a report cannot land on an unpushed commit.
-- `--id <REPORT_ID>` (required except for `list`): the report's external id or UUID. Whitespace, `/`, `?`, `#`, and `%` are rejected because the id is a URL path segment.
+- `--id <REPORT_ID>` (required except for `list`): the report's external id or UUID. Only ASCII letters, digits, `-`, `_`, `.`, `~`, `{`, `}` are accepted, and `.`/`..` are rejected, because the id is a URL path segment and the HTTP client treats `\` as `/` and resolves dot segments (a blocklist let `..\..\widgets` retarget a DELETE at the repository). Ids outside this set need `bb api`.
 - `--commit` and `--id` are validated before config is read or any request is sent.
 
 ### `bb commit report list`
