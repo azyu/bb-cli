@@ -6,12 +6,10 @@ use clap::{Parser, Subcommand};
 mod api;
 mod auth;
 mod commit;
-mod issue;
 mod pipeline;
 mod pr;
 mod repo;
 mod repository;
-mod wiki;
 
 #[cfg(test)]
 mod tests;
@@ -74,16 +72,6 @@ enum Commands {
     Commit {
         #[command(subcommand)]
         command: Option<commit::CommitCommands>,
-    },
-    /// Work with repository issues
-    Issue {
-        #[command(subcommand)]
-        command: Option<issue::IssueCommands>,
-    },
-    /// Read and update repository wiki pages
-    Wiki {
-        #[command(subcommand)]
-        command: Option<wiki::WikiCommands>,
     },
     /// Generate shell completion scripts
     Completion(CompletionArgs),
@@ -174,7 +162,5 @@ fn map_request(cli: Cli) -> Request {
         Some(Commands::Pr { command }) => pr::map_request(command, profile),
         Some(Commands::Pipeline { command }) => pipeline::map_request(command, profile),
         Some(Commands::Commit { command }) => commit::map_request(command, profile),
-        Some(Commands::Issue { command }) => issue::map_request(command, profile),
-        Some(Commands::Wiki { command }) => wiki::map_request(command, profile),
     }
 }

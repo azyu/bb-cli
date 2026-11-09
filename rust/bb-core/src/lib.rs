@@ -358,74 +358,6 @@ pub struct PipelineRunRequest {
 }
 
 #[derive(Debug, Clone)]
-pub struct IssueListRequest {
-    pub workspace: Option<String>,
-    pub repo: Option<String>,
-    pub output: String,
-    pub all: bool,
-    pub profile: Option<String>,
-    pub q: Option<String>,
-    pub sort: Option<String>,
-    pub fields: Option<String>,
-}
-
-#[derive(Debug, Clone)]
-pub struct IssueCreateRequest {
-    pub workspace: Option<String>,
-    pub repo: Option<String>,
-    pub title: Option<String>,
-    pub content: Option<String>,
-    pub state: Option<String>,
-    pub kind: Option<String>,
-    pub priority: Option<String>,
-    pub profile: Option<String>,
-    pub output: String,
-}
-
-#[derive(Debug, Clone)]
-pub struct IssueUpdateRequest {
-    pub workspace: Option<String>,
-    pub repo: Option<String>,
-    pub id: Option<u64>,
-    pub title: Option<String>,
-    pub content: Option<String>,
-    pub state: Option<String>,
-    pub kind: Option<String>,
-    pub priority: Option<String>,
-    pub profile: Option<String>,
-    pub output: String,
-}
-
-#[derive(Debug, Clone)]
-pub struct WikiListRequest {
-    pub workspace: Option<String>,
-    pub repo: Option<String>,
-    pub profile: Option<String>,
-    pub output: String,
-}
-
-#[derive(Debug, Clone)]
-pub struct WikiGetRequest {
-    pub workspace: Option<String>,
-    pub repo: Option<String>,
-    pub page: Option<String>,
-    pub profile: Option<String>,
-    pub output: String,
-}
-
-#[derive(Debug, Clone)]
-pub struct WikiPutRequest {
-    pub workspace: Option<String>,
-    pub repo: Option<String>,
-    pub page: Option<String>,
-    pub content: Option<String>,
-    pub file: Option<String>,
-    pub message: Option<String>,
-    pub profile: Option<String>,
-    pub output: String,
-}
-
-#[derive(Debug, Clone)]
 pub enum AuthRequest {
     Help,
     Login(AuthLoginRequest),
@@ -473,22 +405,6 @@ pub enum PipelineRequest {
     Run(PipelineRunRequest),
 }
 
-#[derive(Debug, Clone)]
-pub enum IssueRequest {
-    Help,
-    List(IssueListRequest),
-    Create(IssueCreateRequest),
-    Update(IssueUpdateRequest),
-}
-
-#[derive(Debug, Clone)]
-pub enum WikiRequest {
-    Help,
-    List(WikiListRequest),
-    Get(WikiGetRequest),
-    Put(WikiPutRequest),
-}
-
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum CommitReportAction {
     List,
@@ -530,8 +446,6 @@ pub enum Request {
     Pr(PrRequest),
     Pipeline(PipelineRequest),
     Commit(CommitRequest),
-    Issue(IssueRequest),
-    Wiki(WikiRequest),
 }
 
 pub fn run<R: BufRead, O: Write, E: Write>(

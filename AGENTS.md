@@ -95,7 +95,7 @@ Useful current commands:
 - When technical behavior changes, update `docs/spec.md` in the same change.
 - When technical choices, API scopes, endpoint usage, or architecture assumptions change, update `docs/references.md` if the change affects project direction.
 - Keep the first release Cloud-only unless explicitly asked otherwise.
-- Mirror proven CLI shape from references (`auth`, `repo`, `pr`, `pipeline`, `issue`, `wiki`, `api`, `completion`).
+- Mirror proven CLI shape from references (`auth`, `repo`, `pr`, `pipeline`, `commit`, `api`, `completion`).
 - When a command maps directly to a Bitbucket Cloud REST operation, prefer the Bitbucket API operation/resource naming over wrapper synonyms (for example `get`/`update` instead of `view`/`edit`).
 - Implement API pagination using Bitbucket `next` links.
 - Support both human-readable output and JSON output for automation.
@@ -109,7 +109,7 @@ Useful current commands:
 - Don’t change unrelated files or formatting.
 
 ### Write Operation Safety
-- Use a dedicated test repository for write operations (`bb pr create`, `bb pipeline run`, `bb issue create`, `bb issue update`, `bb wiki put`) during development.
+- Use a dedicated test repository for write operations (`bb pr create`, `bb pipeline run`, `bb commit report put`, `bb commit report delete`) during development.
 - Keep production repos on read-only tokens unless write access is explicitly needed.
 
 ## After Code Changes

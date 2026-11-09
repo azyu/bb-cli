@@ -2851,3 +2851,23 @@ fn commit_report_delete_rejects_path_traversal_ids_before_any_request() {
         any.assert_hits(0);
     }
 }
+
+#[test]
+fn root_help_and_completions_omit_removed_issue_and_wiki_groups() {
+    let help = bb_command().output().expect("command should run");
+    let help = String::from_utf8(help.stdout).expect("utf-8");
+    assert!(!help.contains("issue"), "{help}");
+    assert!(!help.contains("wiki"), "{help}");
+
+    for shell in ["bash", "zsh", "fish", "powershell"] {
+        let output = bb_command()
+            .args(["completion", shell])
+            .output()
+            .expect("command should run");
+        assert!(output.status.success());
+        let script = String::from_utf8(output.stdout).expect("utf-8");
+        assert!(script.contains("commit"), "{shell}");
+        assert!(!script.contains("issue"), "{shell}");
+        assert!(!script.contains("wiki"), "{shell}");
+    }
+}
