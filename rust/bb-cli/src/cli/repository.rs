@@ -1,4 +1,4 @@
-use bb_core::{IssueRequest, PipelineRequest, PrRequest, Request, WikiRequest};
+use bb_core::{CommitRequest, IssueRequest, PipelineRequest, PrRequest, Request, WikiRequest};
 
 #[derive(Debug, Clone)]
 pub(super) struct RepositoryTarget {
@@ -93,6 +93,12 @@ pub(super) fn apply_repository_target(
                 set_repository_target(&mut request.workspace, &mut request.repo, target)
             }
             PipelineRequest::Run(request) => {
+                set_repository_target(&mut request.workspace, &mut request.repo, target)
+            }
+        },
+        Request::Commit(request) => match request {
+            CommitRequest::Help | CommitRequest::ReportHelp => unsupported_repository_target(),
+            CommitRequest::Report(request) => {
                 set_repository_target(&mut request.workspace, &mut request.repo, target)
             }
         },

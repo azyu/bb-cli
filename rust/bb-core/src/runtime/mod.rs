@@ -4,12 +4,13 @@ use crate::error::CliError;
 use crate::render::{self, ErrorEnvelope, ErrorPayload};
 use crate::version;
 use crate::{
-    AuthRequest, CompletionShell, IssueRequest, PipelineRequest, PrRequest, RepoRequest, Request,
-    WikiRequest,
+    AuthRequest, CommitRequest, CompletionShell, IssueRequest, PipelineRequest, PrRequest,
+    RepoRequest, Request, WikiRequest,
 };
 
 mod api;
 mod auth;
+mod commit;
 mod issue;
 mod pipeline;
 mod pr;
@@ -82,6 +83,7 @@ fn dispatch<R: BufRead, O: Write, E: Write>(
         Request::Repo(repo) => repo::handle_repo(repo, stdout)?,
         Request::Pr(pr) => pr::handle_pr(pr, stdout, stderr, stdout_is_tty, stderr_is_tty)?,
         Request::Pipeline(pipeline) => pipeline::handle_pipeline(pipeline, stdout)?,
+        Request::Commit(commit) => commit::handle_commit(commit, stdin, stdout)?,
         Request::Issue(issue) => issue::handle_issue(issue, stdout)?,
         Request::Wiki(wiki) => wiki::handle_wiki(wiki, stdout)?,
     }
@@ -150,6 +152,9 @@ fn wants_json_errors(request: &Request) -> bool {
             req.output.trim().eq_ignore_ascii_case("json")
         }
         Request::Pipeline(PipelineRequest::Run(req)) => {
+            req.output.trim().eq_ignore_ascii_case("json")
+        }
+        Request::Commit(CommitRequest::Report(req)) => {
             req.output.trim().eq_ignore_ascii_case("json")
         }
         Request::Issue(IssueRequest::List(req)) => req.output.trim().eq_ignore_ascii_case("json"),

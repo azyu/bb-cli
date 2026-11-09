@@ -142,6 +142,9 @@ Operational UX:
 - `GET /repositories/{workspace}/{repo_slug}/pipelines/{pipeline_uuid}/steps/{step_uuid}/log`
   - Observed (not an officially documented contract): the `{pipeline_uuid}` path segment also accepts a build number, and the pipelines list endpoint ignores `q=build_number=<n>` (it returns the whole collection). Build selectors (`--build <n>`, numeric positional) therefore resolve through `GET .../pipelines/{build_number}`; the server's own 404 detail (`Pipeline with build number '<n>' not found in repository ...`) confirms it treats the segment as a build number.
 - `POST /repositories/{workspace}/{repo_slug}/pipelines`
+- `GET /repositories/{workspace}/{repo_slug}/commit/{commit}/reports`
+- `GET|PUT|DELETE /repositories/{workspace}/{repo_slug}/commit/{commit}/reports/{reportId}`
+  - The published OpenAPI lists only `read:repository:bitbucket` for all four operations, including `PUT` and `DELETE`.
 - `GET /repositories/{workspace}/{repo_slug}/issues`
 - Wiki operations via Git remote:
   - `https://bitbucket.org/{workspace}/{repo_slug}.git/wiki`
@@ -195,6 +198,7 @@ Rust migration decisions:
   - `bb repo list`
   - `bb pr list|create|merge|get|update|approve|unapprove|request-changes|remove-request-changes|decline|comment|comment-update|comments|diff|diffstat|statuses|activity`
   - `bb pipeline list|get|steps|log|run`
+  - `bb commit report list|get|put|delete`
   - `bb issue list|create|update`
   - `bb wiki list|get|put`
   - `bb completion`

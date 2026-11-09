@@ -71,7 +71,7 @@ pub fn project_json_list(values: &[Value], fields: &[String]) -> Vec<Value> {
 
 pub fn root_usage() -> String {
     format!(
-        "bb - Bitbucket CLI (Cloud MVP)\nVersion: {}\n\nUsage:\n  bb <command> [subcommand] [flags]\n\nCommands:\n  auth       Authenticate and inspect auth status\n  api        Call Bitbucket Cloud REST endpoints\n  repo       Repository operations\n  version    Show CLI version metadata\n  pr         Pull request operations\n  pipeline   Pipeline operations\n  wiki       Wiki operations\n  issue      Issue operations\n  completion Shell completion\n\nQuick start:\n  bb auth login --token \"$BITBUCKET_TOKEN\" --username you@example.com\n  bb pr create --workspace acme --repo widgets --title \"Add widget support\" --source feature/widgets --destination main\n  bb pr comments 123 --workspace acme --repo widgets\n\nNotes:\n  - Add --output json when an agent needs machine-readable output.\n  - In a cloned Bitbucket repo, repo-scoped commands can infer --workspace and --repo.\n",
+        "bb - Bitbucket CLI (Cloud MVP)\nVersion: {}\n\nUsage:\n  bb <command> [subcommand] [flags]\n\nCommands:\n  auth       Authenticate and inspect auth status\n  api        Call Bitbucket Cloud REST endpoints\n  repo       Repository operations\n  version    Show CLI version metadata\n  pr         Pull request operations\n  pipeline   Pipeline operations\n  commit     Commit operations (Code Insights reports)\n  wiki       Wiki operations\n  issue      Issue operations\n  completion Shell completion\n\nQuick start:\n  bb auth login --token \"$BITBUCKET_TOKEN\" --username you@example.com\n  bb pr create --workspace acme --repo widgets --title \"Add widget support\" --source feature/widgets --destination main\n  bb pr comments 123 --workspace acme --repo widgets\n\nNotes:\n  - Add --output json when an agent needs machine-readable output.\n  - In a cloned Bitbucket repo, repo-scoped commands can infer --workspace and --repo.\n",
         version::display_version()
     )
 }
@@ -90,6 +90,14 @@ pub fn pr_usage() -> &'static str {
 
 pub fn pipeline_usage() -> &'static str {
     "Pipeline operations\n\nUsage:\n  bb pipeline <command>\n\nCommands:\n  list   List pipelines\n  get    Get a pipeline\n  steps  List pipeline steps\n  log    Get a pipeline step log\n  run    Trigger a pipeline\n"
+}
+
+pub fn commit_usage() -> &'static str {
+    "Commit operations\n\nUsage:\n  bb commit <command>\n\nCommands:\n  report  Manage Code Insights reports on a commit\n"
+}
+
+pub fn commit_report_usage() -> &'static str {
+    "Code Insights report operations\n\nUsage:\n  bb commit report <command> --commit <SHA> [--id <REPORT_ID>]\n\nCommands:\n  list    List reports on a commit\n  get     Get a report\n  put     Create or update a report from a JSON body\n  delete  Delete a report\n"
 }
 
 pub fn issue_usage() -> &'static str {
@@ -113,11 +121,12 @@ pub fn bash_completion_script() -> &'static str {
     repo)       COMPREPLY=($(compgen -W "list" -- "${cur}")); return;;
     pr)         COMPREPLY=($(compgen -W "list create merge get update approve unapprove request-changes remove-request-changes decline comment comment-update comments diff diffstat statuses activity" -- "${cur}")); return;;
     pipeline)   COMPREPLY=($(compgen -W "list get steps log run" -- "${cur}")); return;;
+    commit)     COMPREPLY=($(compgen -W "report" -- "${cur}")); return;;
     issue)      COMPREPLY=($(compgen -W "list create update" -- "${cur}")); return;;
     wiki)       COMPREPLY=($(compgen -W "list get put" -- "${cur}")); return;;
     completion) COMPREPLY=($(compgen -W "bash zsh fish powershell" -- "${cur}")); return;;
   esac
-  local cmds="auth api repo pr pipeline wiki issue completion version help"
+  local cmds="auth api repo pr pipeline commit wiki issue completion version help"
   COMPREPLY=($(compgen -W "${cmds}" -- "${cur}"))
 }
 complete -F _bb_complete bb"#
@@ -127,13 +136,14 @@ pub fn zsh_completion_script() -> &'static str {
     r#"#compdef bb
 _bb() {
   local -a commands subcmds
-  commands=(auth api repo pr pipeline wiki issue completion version help)
+  commands=(auth api repo pr pipeline commit wiki issue completion version help)
   _arguments "1:command:($commands)" "*::arg:->args"
   case $words[1] in
     auth)       subcmds=(login status list switch logout);;
     repo)       subcmds=(list);;
     pr)         subcmds=(list create merge get update approve unapprove request-changes remove-request-changes decline comment comment-update comments diff diffstat statuses activity);;
     pipeline)   subcmds=(list get steps log run);;
+    commit)     subcmds=(report);;
     issue)      subcmds=(list create update);;
     wiki)       subcmds=(list get put);;
     completion) subcmds=(bash zsh fish powershell);;
@@ -144,11 +154,12 @@ compdef _bb bb"#
 }
 
 pub fn fish_completion_script() -> &'static str {
-    r#"complete -c bb -f -n '__fish_use_subcommand' -a "auth api repo pr pipeline wiki issue completion version help"
+    r#"complete -c bb -f -n '__fish_use_subcommand' -a "auth api repo pr pipeline commit wiki issue completion version help"
 complete -c bb -f -n '__fish_seen_subcommand_from auth' -a "login status list switch logout"
 complete -c bb -f -n '__fish_seen_subcommand_from repo' -a "list"
 complete -c bb -f -n '__fish_seen_subcommand_from pr' -a "list create merge get update approve unapprove request-changes remove-request-changes decline comment comment-update comments diff diffstat statuses activity"
 complete -c bb -f -n '__fish_seen_subcommand_from pipeline' -a "list get steps log run"
+complete -c bb -f -n '__fish_seen_subcommand_from commit' -a "report"
 complete -c bb -f -n '__fish_seen_subcommand_from issue' -a "list create update"
 complete -c bb -f -n '__fish_seen_subcommand_from wiki' -a "list get put"
 complete -c bb -f -n '__fish_seen_subcommand_from completion' -a "bash zsh fish powershell""#
@@ -163,6 +174,7 @@ pub fn powershell_completion_script() -> &'static str {
     'repo'       = @('list')
     'pr'         = @('list','create','merge','get','update','approve','unapprove','request-changes','remove-request-changes','decline','comment','comment-update','comments','diff','diffstat','statuses','activity')
     'pipeline'   = @('list','get','steps','log','run')
+    'commit'     = @('report')
     'issue'      = @('list','create','update')
     'wiki'       = @('list','get','put')
     'completion' = @('bash','zsh','fish','powershell')
@@ -172,7 +184,7 @@ pub fn powershell_completion_script() -> &'static str {
       Where-Object { $_ -like "$wordToComplete*" } |
       ForEach-Object { [System.Management.Automation.CompletionResult]::new($_, $_, 'ParameterValue', $_) }
   } else {
-    "auth","api","repo","pr","pipeline","wiki","issue","completion","version","help" |
+    "auth","api","repo","pr","pipeline","commit","wiki","issue","completion","version","help" |
       Where-Object { $_ -like "$wordToComplete*" } |
       ForEach-Object { [System.Management.Automation.CompletionResult]::new($_, $_, 'ParameterValue', $_) }
   }
@@ -468,6 +480,32 @@ pub fn render_pipeline_steps_table(values: &[Value]) -> String {
         })
         .collect::<Vec<_>>();
     format!("{}\n", render_table(&["UUID", "STATE", "NAME"], &rows))
+}
+
+pub fn render_commit_report_table(values: &[Value]) -> String {
+    let rows = values
+        .iter()
+        .map(|value| {
+            vec![
+                first_string_field(value, &[&["external_id"], &["uuid"]])
+                    .unwrap_or("-")
+                    .to_string(),
+                string_field(value, &["result"]).unwrap_or("-").to_string(),
+                string_field(value, &["report_type"])
+                    .unwrap_or("-")
+                    .to_string(),
+                string_field(value, &["title"]).unwrap_or("-").to_string(),
+                relative_time_label(
+                    first_string_field(value, &[&["updated_on"], &["created_on"]])
+                        .unwrap_or_default(),
+                ),
+            ]
+        })
+        .collect::<Vec<_>>();
+    format!(
+        "{}\n",
+        render_table(&["ID", "RESULT", "TYPE", "TITLE", "UPDATED AT"], &rows)
+    )
 }
 
 pub fn render_issue_table(values: &[Value]) -> String {

@@ -19,7 +19,7 @@
 
 ## Supported Scope
 - Bitbucket Cloud only.
-- Supported top-level command groups are `auth`, `api`, `repo`, `pr`, `pipeline`, `issue`, `wiki`, `completion`, and `version`.
+- Supported top-level command groups are `auth`, `api`, `repo`, `pr`, `pipeline`, `commit`, `issue`, `wiki`, `completion`, and `version`.
 - Local Git workflow helpers such as `bb pr checkout` remain out of scope.
 - Detailed subcommand contracts live only in `docs/command-contracts.md`.
 
