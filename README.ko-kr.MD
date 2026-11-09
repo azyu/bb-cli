@@ -10,7 +10,7 @@
 
 ## 특징
 
-- repo, PR, pipeline, issue, wiki와 raw API 호출을 `gh` 스타일 그룹으로 제공
+- repo, PR, pipeline, commit report, issue, wiki와 raw API 호출을 `gh` 스타일 그룹으로 제공
 - 로컬 Bitbucket `remote.origin.url`에서 repo context 자동 추론
 - 사람용 text/table 출력과 자동화용 안정적인 JSON 출력을 함께 지원
 - bash, zsh, fish, PowerShell용 셸 자동완성 제공
@@ -96,6 +96,8 @@ bb pipeline list
 bb pipeline get --uuid "{pipeline-uuid}"
 bb pipeline get --build 123
 bb pipeline log --build 123 --step "{step-uuid}"
+bb commit report list --commit 110daa97
+bb commit report delete --commit 110daa97 --id mysystem-001
 ```
 
 ### 4. 셸 자동완성 활성화
@@ -112,6 +114,7 @@ bb completion zsh
 | `bb repo` | `list` |
 | `bb pr` | `list`, `get`, `create`, `update`, `merge`, `approve`, `unapprove`, `request-changes`, `remove-request-changes`, `decline`, `comment`, `comment-update`, `comments`, `diff`, `diffstat`, `statuses`, `activity` |
 | `bb pipeline` | `list`, `get`, `steps`, `log`, `run` |
+| `bb commit` | `report list`, `report get`, `report put`, `report delete` |
 | `bb issue` | `list`, `create`, `update` |
 | `bb wiki` | `list`, `get`, `put` |
 | `bb api` | Bitbucket Cloud raw endpoint 호출 |
@@ -176,6 +179,7 @@ bb completion zsh
 | `bb pr create/update/merge/approve/unapprove/request-changes/remove-request-changes/decline/comment/comment-update` | `read:repository`, `read:pullrequest`, `write:pullrequest` |
 | `bb pipeline list/get/steps/log` | `read:repository`, `read:pipeline` |
 | `bb pipeline run` | `read:repository`, `read:pipeline`, `write:pipeline` |
+| `bb commit report list/get/put/delete` | `read:repository` |
 | `bb wiki list/get` | `read:repository`, `read:wiki` |
 | `bb wiki put` | `read:repository`, `read:wiki`, `write:wiki` |
 | `bb issue list` | `read:repository`, `read:issue` |

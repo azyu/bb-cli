@@ -489,6 +489,36 @@ pub enum WikiRequest {
     Put(WikiPutRequest),
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum CommitReportAction {
+    List,
+    Get,
+    Put,
+    Delete,
+}
+
+/// One request shape for all report actions; clap restricts which flags each action accepts.
+#[derive(Debug, Clone)]
+pub struct CommitReportRequest {
+    pub action: CommitReportAction,
+    pub workspace: Option<String>,
+    pub repo: Option<String>,
+    pub commit: Option<String>,
+    pub id: Option<String>,
+    pub input: Option<String>,
+    pub output: String,
+    pub all: bool,
+    pub fields: Option<String>,
+    pub profile: Option<String>,
+}
+
+#[derive(Debug, Clone)]
+pub enum CommitRequest {
+    Help,
+    ReportHelp,
+    Report(CommitReportRequest),
+}
+
 #[derive(Debug, Clone)]
 pub enum Request {
     RootHelp,
@@ -499,6 +529,7 @@ pub enum Request {
     Repo(RepoRequest),
     Pr(PrRequest),
     Pipeline(PipelineRequest),
+    Commit(CommitRequest),
     Issue(IssueRequest),
     Wiki(WikiRequest),
 }

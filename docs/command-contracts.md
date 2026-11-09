@@ -553,6 +553,65 @@ Naming rule: prefer Bitbucket API-aligned names (`get`, `update`, `request-chang
   - Missing required flags -> non-zero exit
   - Unsupported output -> non-zero exit
 
+## `bb commit`
+
+Code Insights reports attached to a commit. `bb commit` and `bb commit report` without a subcommand print their usage.
+
+Shared flags for every `bb commit report` subcommand:
+- `--workspace`, `--repo` unless both can be inferred from local Bitbucket `remote.origin.url` (or `-R WORKSPACE/REPO`)
+- `--commit <SHA>` (required): hexadecimal commit hash. Local `HEAD` is never used as a default, so a report cannot land on an unpushed commit.
+- `--id <REPORT_ID>` (required except for `list`): the report's external id or UUID. Only ASCII letters, digits, `-`, `_`, `.`, `~`, `{`, `}` are accepted, and `.`/`..` are rejected, because the id is a URL path segment and the HTTP client treats `\` as `/` and resolves dot segments (a blocklist let `..\..\widgets` retarget a DELETE at the repository). Ids outside this set need `bb api`.
+- `--commit` and `--id` are validated before config is read or any request is sent.
+
+### `bb commit report list`
+- Purpose: List reports on a commit.
+- Optional flags:
+  - `--output` (`table` default, `json`)
+  - `--all` (follow pagination)
+  - `--fields`
+- Output:
+  - `table`: `ID` (`external_id`, else `uuid`), `RESULT`, `TYPE`, `TITLE`, `UPDATED AT`
+  - `json`: array of report objects
+- Failure behavior:
+  - Missing or non-hex `--commit` -> non-zero exit
+  - Unsupported output -> non-zero exit
+
+### `bb commit report get`
+- Purpose: Get one report.
+- Optional flags:
+  - `--output` (`text` default, `json`)
+  - `--fields`
+- Output:
+  - `text`: `Report <id>: <title>` then `Result`, `Type`, `Reporter`, and `Link` when present
+  - `json`: report object
+- Failure behavior:
+  - Missing `--commit` or `--id`, or an invalid value -> non-zero exit
+  - Report not found -> non-zero exit with the API 404 summary
+
+### `bb commit report put`
+- Purpose: Create or update a report (`PUT`, the API's create-or-update operation).
+- Required flags:
+  - `--input <path>` (`-` reads the report JSON body from stdin)
+- Optional flags:
+  - `--output` (`text` default, `json`)
+- Output:
+  - `text`: `Saved report <id>: <title>` then the same fields as `get`
+  - `json`: saved report object
+- Failure behavior:
+  - Missing `--input` or invalid JSON body -> non-zero exit before any request
+  - Malformed report object -> non-zero exit with the API 400 summary
+
+### `bb commit report delete`
+- Purpose: Delete a report.
+- Optional flags:
+  - `--output` (`text` default, `json`)
+- Output:
+  - `text`: `Deleted report <id> on commit <sha>`
+  - `json`: synthetic object `{"commit", "id", "action": "deleted", "ok": true}`
+- Failure behavior:
+  - Missing `--commit` or `--id`, or an invalid value -> non-zero exit
+  - API error -> non-zero exit with status/body summary
+
 ## `bb issue`
 
 ### `bb issue list`

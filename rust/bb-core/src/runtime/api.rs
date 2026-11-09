@@ -50,7 +50,7 @@ pub(super) fn handle_api<R: Read, O: Write>(
         ApiResponse::Raw => Ok(()),
     }
 }
-fn read_api_input_body_from<R: Read>(
+pub(super) fn read_api_input_body_from<R: Read>(
     input: Option<&str>,
     stdin: &mut R,
 ) -> Result<Option<Value>, CliError> {

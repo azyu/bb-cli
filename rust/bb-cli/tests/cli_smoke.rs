@@ -2586,3 +2586,268 @@ fn pr_get_invalid_json_field_emits_json_error() {
         "unknown --json-fields value for bb pr get: nope (allowed: author, close_source_branch, comment_count, created_on, description, destination, draft, id, links, participants, reason, reviewers, source, state, summary, task_count, title, updated_on)"
     );
 }
+
+const REPORT_PATH: &str =
+    "/2.0/repositories/acme/widgets/commit/110daa97/reports/pr-risk-tier-trial";
+
+fn report_config(server: &MockServer) -> (tempfile::TempDir, std::path::PathBuf) {
+    let temp = tempdir().unwrap();
+    let config_path = temp.path().join("config.json");
+    write_config(&config_path, &format!("{}/2.0", server.base_url()));
+    (temp, config_path)
+}
+
+#[test]
+fn commit_report_list_renders_table_from_repository_target() {
+    let server = MockServer::start();
+    let list = server.mock(|when, then| {
+        when.method(GET)
+            .path("/2.0/repositories/acme/widgets/commit/110daa97/reports");
+        then.json_body(json!({"values": [{
+            "external_id": "pr-risk-tier-trial",
+            "uuid": "{r-1}",
+            "result": "FAILED",
+            "report_type": "SECURITY",
+            "title": "Risk tier"
+        }]}));
+    });
+    let (_temp, config_path) = report_config(&server);
+
+    let output = bb_command()
+        .args([
+            "commit",
+            "report",
+            "list",
+            "-R",
+            "acme/widgets",
+            "--commit",
+            "110daa97",
+        ])
+        .env("BB_CONFIG_PATH", &config_path)
+        .output()
+        .expect("command should run");
+
+    assert!(output.status.success(), "{output:?}");
+    let stdout = String::from_utf8(output.stdout).expect("stdout should be utf-8");
+    assert!(stdout.contains("ID"), "{stdout}");
+    assert!(stdout.contains("pr-risk-tier-trial"), "{stdout}");
+    assert!(stdout.contains("FAILED"), "{stdout}");
+    assert!(stdout.contains("SECURITY"), "{stdout}");
+    list.assert();
+}
+
+#[test]
+fn commit_report_get_json_returns_raw_report() {
+    let server = MockServer::start();
+    let get = server.mock(|when, then| {
+        when.method(GET).path(REPORT_PATH);
+        then.json_body(json!({"external_id": "pr-risk-tier-trial", "result": "PASSED"}));
+    });
+    let (_temp, config_path) = report_config(&server);
+
+    let output = bb_command()
+        .args([
+            "commit",
+            "report",
+            "get",
+            "-R",
+            "acme/widgets",
+            "--commit",
+            "110daa97",
+            "--id",
+            "pr-risk-tier-trial",
+            "--output",
+            "json",
+        ])
+        .env("BB_CONFIG_PATH", &config_path)
+        .output()
+        .expect("command should run");
+
+    assert!(output.status.success(), "{output:?}");
+    let body: serde_json::Value = serde_json::from_slice(&output.stdout).expect("json");
+    assert_eq!(body["result"], "PASSED");
+    get.assert();
+}
+
+#[test]
+fn commit_report_put_sends_stdin_body_with_put() {
+    let server = MockServer::start();
+    let put = server.mock(|when, then| {
+        when.method(PUT)
+            .path(REPORT_PATH)
+            .json_body(json!({"title": "Risk tier", "report_type": "TEST", "result": "PASSED"}));
+        then.json_body(json!({
+            "external_id": "pr-risk-tier-trial",
+            "title": "Risk tier",
+            "result": "PASSED",
+            "report_type": "TEST",
+            "reporter": "ci"
+        }));
+    });
+    let (_temp, config_path) = report_config(&server);
+
+    let output = AssertCommand::from_std(bb_command())
+        .args([
+            "commit",
+            "report",
+            "put",
+            "-R",
+            "acme/widgets",
+            "--commit",
+            "110daa97",
+            "--id",
+            "pr-risk-tier-trial",
+            "--input",
+            "-",
+        ])
+        .env("BB_CONFIG_PATH", &config_path)
+        .write_stdin(r#"{"title":"Risk tier","report_type":"TEST","result":"PASSED"}"#)
+        .timeout(Duration::from_secs(30))
+        .output()
+        .expect("command should run");
+
+    assert!(output.status.success(), "{output:?}");
+    let stdout = String::from_utf8(output.stdout).expect("stdout should be utf-8");
+    assert!(
+        stdout.starts_with("Saved report pr-risk-tier-trial: Risk tier\n"),
+        "{stdout}"
+    );
+    assert!(stdout.contains("Result: PASSED"), "{stdout}");
+    put.assert();
+}
+
+#[test]
+fn commit_report_put_requires_input_before_any_request() {
+    let server = MockServer::start();
+    let any = server.mock(|when, then| {
+        when.any_request();
+        then.status(500);
+    });
+    let (_temp, config_path) = report_config(&server);
+
+    let output = bb_command()
+        .args([
+            "commit",
+            "report",
+            "put",
+            "-R",
+            "acme/widgets",
+            "--commit",
+            "110daa97",
+            "--id",
+            "x",
+        ])
+        .env("BB_CONFIG_PATH", &config_path)
+        .output()
+        .expect("command should run");
+
+    assert!(!output.status.success());
+    assert!(String::from_utf8_lossy(&output.stderr).contains("--input is required"));
+    any.assert_hits(0);
+}
+
+#[test]
+fn commit_report_delete_json_emits_synthetic_envelope() {
+    let server = MockServer::start();
+    let delete = server.mock(|when, then| {
+        when.method(DELETE).path(REPORT_PATH);
+        then.status(204);
+    });
+    let (_temp, config_path) = report_config(&server);
+
+    let output = bb_command()
+        .args([
+            "commit",
+            "report",
+            "delete",
+            "-R",
+            "acme/widgets",
+            "--commit",
+            "110daa97",
+            "--id",
+            "pr-risk-tier-trial",
+            "--output",
+            "json",
+        ])
+        .env("BB_CONFIG_PATH", &config_path)
+        .output()
+        .expect("command should run");
+
+    assert!(output.status.success(), "{output:?}");
+    let body: serde_json::Value = serde_json::from_slice(&output.stdout).expect("json");
+    assert_eq!(
+        body,
+        json!({"commit": "110daa97", "id": "pr-risk-tier-trial", "action": "deleted", "ok": true})
+    );
+    delete.assert();
+}
+
+#[test]
+fn commit_report_delete_rejects_non_hex_commit_before_any_request() {
+    let server = MockServer::start();
+    let any = server.mock(|when, then| {
+        when.any_request();
+        then.status(500);
+    });
+    let (_temp, config_path) = report_config(&server);
+
+    let output = bb_command()
+        .args([
+            "commit",
+            "report",
+            "delete",
+            "-R",
+            "acme/widgets",
+            "--commit",
+            "main",
+            "--id",
+            "x",
+            "--output",
+            "json",
+        ])
+        .env("BB_CONFIG_PATH", &config_path)
+        .output()
+        .expect("command should run");
+
+    assert!(!output.status.success());
+    let body: serde_json::Value = serde_json::from_slice(&output.stdout).expect("json error");
+    assert_eq!(body["error"]["code"], "invalid_input");
+    any.assert_hits(0);
+}
+
+#[test]
+fn commit_report_delete_rejects_path_traversal_ids_before_any_request() {
+    // reqwest::Url treats '\' as '/' for http(s) and resolves dot segments, so these ids
+    // would retarget the DELETE at the repository itself.
+    for id in [r"..\..\..\..\widgets", "..", "."] {
+        let server = MockServer::start();
+        let any = server.mock(|when, then| {
+            when.any_request();
+            then.status(204);
+        });
+        let (_temp, config_path) = report_config(&server);
+
+        let output = bb_command()
+            .args([
+                "commit",
+                "report",
+                "delete",
+                "-R",
+                "acme/widgets",
+                "--commit",
+                "110daa97",
+                "--id",
+                id,
+                "--output",
+                "json",
+            ])
+            .env("BB_CONFIG_PATH", &config_path)
+            .output()
+            .expect("command should run");
+
+        assert!(!output.status.success(), "{id} should be rejected");
+        let body: serde_json::Value = serde_json::from_slice(&output.stdout).expect("json error");
+        assert_eq!(body["error"]["code"], "invalid_input", "{id}");
+        any.assert_hits(0);
+    }
+}

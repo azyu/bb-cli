@@ -5,6 +5,7 @@ use clap::{Parser, Subcommand};
 
 mod api;
 mod auth;
+mod commit;
 mod issue;
 mod pipeline;
 mod pr;
@@ -68,6 +69,11 @@ enum Commands {
     Pipeline {
         #[command(subcommand)]
         command: Option<pipeline::PipelineCommands>,
+    },
+    /// Work with commits (Code Insights reports)
+    Commit {
+        #[command(subcommand)]
+        command: Option<commit::CommitCommands>,
     },
     /// Work with repository issues
     Issue {
@@ -167,6 +173,7 @@ fn map_request(cli: Cli) -> Request {
         Some(Commands::Repo { command }) => repo::map_request(command, profile),
         Some(Commands::Pr { command }) => pr::map_request(command, profile),
         Some(Commands::Pipeline { command }) => pipeline::map_request(command, profile),
+        Some(Commands::Commit { command }) => commit::map_request(command, profile),
         Some(Commands::Issue { command }) => issue::map_request(command, profile),
         Some(Commands::Wiki { command }) => wiki::map_request(command, profile),
     }
