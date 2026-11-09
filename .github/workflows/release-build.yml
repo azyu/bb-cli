@@ -38,7 +38,7 @@ jobs:
             artifact_name: bb_linux_arm64
             binary_name: bb
           - label: macos-arm64
-            runs_on: macos-14
+            runs_on: macos-latest
             target: aarch64-apple-darwin
             platform_id: macos_arm64
             artifact_name: bb_macos_arm64
@@ -84,11 +84,12 @@ jobs:
       - name: Build binary
         shell: bash
         env:
-          BB_BUILD_COMMIT: ${{ github.sha }}
           BB_BUILD_DATE: ${{ github.event.repository.updated_at }}
         run: |
           set -euo pipefail
           VERSION="${RELEASE_TAG#v}"
+          # github.sha is the dispatching branch head on workflow_dispatch; stamp the tag's commit.
+          BB_BUILD_COMMIT="$(git rev-parse HEAD)" \
           BB_BUILD_VERSION="${VERSION}" \
             cargo build --manifest-path rust/Cargo.toml -p bb-cli --bin bb --release --target "${{ matrix.target }}"
 

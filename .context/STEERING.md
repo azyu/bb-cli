@@ -21,7 +21,8 @@
 ## Current Phase
 - Phase: v0.3.0 released
 - Owner: Main
-- Tracking: [GitHub Issue #58](https://github.com/azyu/bb-cli/issues/58) (in progress: remove `bb issue`/`bb wiki`; Bitbucket Cloud removed Issues and Wikis on 2026-08-20 and the issue endpoints now return 410). Queued: [#60](https://github.com/azyu/bb-cli/issues/60) (`bb pipeline stop`, `bb commit status`).
+- Tracking: [GitHub Issue #63](https://github.com/azyu/bb-cli/issues/63) (in progress: release v0.4.0). The first Release Build for the `v0.4.0` tag was cancelled because GitHub retired the `macos-14` runner image on 2026-11-02; nothing was published. The release resumes via `workflow_dispatch` once the runner fix merges. Queued: [#60](https://github.com/azyu/bb-cli/issues/60) (`bb pipeline stop`, `bb commit status`).
+- Removed from main since v0.3.0: `bb issue` and `bb wiki` ([#58](https://github.com/azyu/bb-cli/issues/58), [PR #62](https://github.com/azyu/bb-cli/pull/62)); Bitbucket Cloud removed Issues and Wikis on 2026-08-20.
 - Shipped on main since v0.3.0: `bb commit report list|get|put|delete` ([#59](https://github.com/azyu/bb-cli/issues/59), [PR #61](https://github.com/azyu/bb-cli/pull/61)).
 - Previous tracking: [GitHub Issue #57](https://github.com/azyu/bb-cli/issues/57) (v0.3.0 release, completed).
 - Notes: `v0.3.0` is published from `4af92c2`. Release Build run `35095556902` succeeded, all five platform archives plus `checksums.txt` are uploaded, `shasum -a 256 -c checksums.txt` passed for every archive, and the natively-run macOS ARM64 binary reports `0.3.0+4af92c2` and exercises all three shipped features. The workflow synchronized the workspace version (`7d9f870`) and the Homebrew formula, whose three sha256 values were cross-checked against the release checksums. The Linux and Windows archives were checksum-verified but not executed.
