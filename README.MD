@@ -6,15 +6,15 @@
 
 [English](README.MD) | [한국어](README.ko-kr.MD)
 
-> A fast, agent-friendly Bitbucket Cloud CLI inspired by `gh`, built in Rust.
+> A fast, `gh`-style Bitbucket Cloud CLI written in Rust for humans and AI agents.
 
 ## Features
 
-- `gh`-style command groups for repos, PRs, pipelines, commit reports, and raw API calls
-- Repo inference from local Bitbucket `remote.origin.url`
-- Human-friendly text/table output plus stable JSON output for automation
-- Shell completion for bash, zsh, fish, and PowerShell
-- Cross-platform release binaries for Linux, macOS, and Windows
+- `gh`-style command groups for repositories, pull requests, pipelines, commit reports, and raw API calls
+- Automatic workspace and repository detection from your local Bitbucket `remote.origin.url`
+- Text and table output for interactive use, plus stable JSON output for scripts and agents
+- Shell completions for bash, zsh, fish, and PowerShell
+- Prebuilt cross-platform binaries for Linux, macOS, and Windows
 
 ## Installation
 
@@ -26,7 +26,7 @@ brew install azyu/tap/bb
 
 ### Prebuilt binaries
 
-Download the latest archive from [GitHub Releases](https://github.com/azyu/bb-cli/releases/latest).
+Download the archive for your platform from [GitHub Releases](https://github.com/azyu/bb-cli/releases/latest).
 
 | Platform | Asset |
 |----------|-------|
@@ -38,7 +38,7 @@ Download the latest archive from [GitHub Releases](https://github.com/azyu/bb-cl
 
 ### From source
 
-Requires Rust 1.93+.
+Requires Rust 1.93 or later.
 
 ```bash
 make install
@@ -53,36 +53,35 @@ bb auth login --username "<bitbucket-email>" --token "<your-token>"
 ```
 
 > [!TIP]
-> You can also read the token from stdin or the environment.
+> You can also pass the token over stdin or via environment variables instead of a command-line flag:
 > ```bash
 > echo "<token>" | bb auth login --username "<email>" --with-token
 > BITBUCKET_USERNAME="<email>" BITBUCKET_TOKEN="<token>" bb auth login
 > ```
 
-### 2. Verify the active profile
+### 2. Verify your active profile
 
 ```bash
 bb auth status
 ```
 
 > [!TIP]
-> **Multiple accounts.** Give each account a profile name, then switch between them or
-> override the active one per command.
+> To use multiple accounts, save each under a profile name. You can switch the active profile or override it for a single command:
 > ```bash
 > bb auth login --profile work     --username "<work-email>"     --token "<token>"
 > bb auth login --profile personal --username "<personal-email>" --token "<token>"
 >
-> bb auth list                   # saved profiles, active one marked with *
-> bb auth list --output json     # same, machine-readable
-> bb auth switch --profile work  # change the active profile, no token needed
-> bb pr list --profile personal  # one-off override, active profile unchanged
-> bb --profile personal pr list  # same; --profile works in either position
+> bb auth list                   # List saved profiles (* marks the active one)
+> bb auth list --output json     # Machine-readable profile list
+> bb auth switch --profile work  # Switch the active profile without re-entering a token
+> bb pr list --profile personal  # Override the profile for one command only
+> bb --profile personal pr list  # Same as above (--profile works before or after the subcommand)
 > ```
 
 ### 3. Run common commands
 
-Inside a Bitbucket repository, `bb` can infer `--workspace` and `--repo` from `remote.origin.url`.
-Outside a repository, select the target explicitly with `-R <workspace>/<repo>`. Do not combine `-R` with `--workspace` or `--repo`.
+Inside a local Bitbucket repository, `bb` detects `--workspace` and `--repo` from `remote.origin.url`.
+Outside a repository, or when targeting a different one, pass `-R <workspace>/<repo>` instead. Do not combine `-R` with `--workspace` or `--repo`.
 
 ```bash
 bb pr list
@@ -102,6 +101,8 @@ bb commit report delete --commit 110daa97 --id mysystem-001
 
 ### 4. Enable shell completion
 
+Generate a completion script for your shell (`bash`, `zsh`, `fish`, or `powershell`):
+
 ```bash
 bb completion zsh
 ```
@@ -115,30 +116,25 @@ bb completion zsh
 | `bb pr` | `list`, `get`, `create`, `update`, `merge`, `approve`, `unapprove`, `request-changes`, `remove-request-changes`, `decline`, `comment`, `comment-update`, `comments`, `diff`, `diffstat`, `statuses`, `activity` |
 | `bb pipeline` | `list`, `get`, `steps`, `log`, `run` |
 | `bb commit` | `report list`, `report get`, `report put`, `report delete` |
-| `bb api` | raw Bitbucket Cloud endpoint access |
+| `bb api` | Direct Bitbucket Cloud API requests |
 | `bb completion` | `bash`, `zsh`, `fish`, `powershell` |
-| `bb version` | build metadata |
+| `bb version` | Build metadata |
 
 > [!NOTE]
-> Existing-PR commands accept the pull request ID as positional `<id>` or `--id`.
->
-> Example: `bb pr comments 123` and `bb pr comments --id 123` are both valid.
->
-> Pipeline read commands accept either `--uuid` or `--build`.
->
-> For `bb pr comments` and `bb pr comment-update`, `--comment-id` selects a single comment within that pull request. Do not pass a comment ID via `--id`.
->
-> When an agent only needs part of a JSON payload, combine `--output json` with `--json-fields`.
+> - Commands targeting an existing PR accept the ID positionally or with `--id` (`bb pr comments 123` and `bb pr comments --id 123` are equivalent).
+> - In `bb pr comments` and `bb pr comment-update`, pass `--comment-id` to select a comment. `--id` always refers to the pull request.
+> - Pipeline read commands accept either `--uuid` or `--build`.
+> - Combine `--output json` with `--json-fields` when scripts or agents only need a subset of fields.
 
 ## Configuration and Auth
 
-Config path priority:
+`bb` resolves its configuration file in the following order:
 
 1. `BB_CONFIG_PATH`
 2. `$XDG_CONFIG_HOME/bb/config.json`
 3. `~/.config/bb/config.json`
 
-Auth modes:
+Supported authentication modes:
 
 | Mode | Scheme | Username required |
 |------|--------|-------------------|
@@ -146,16 +142,16 @@ Auth modes:
 | Access token | Bearer | No |
 
 > [!CAUTION]
-> Tokens are stored in plain text in the local config file. Keep file permissions tight.
+> Tokens are stored in plain text in your local config file. Make sure the file permissions are restricted to your user.
 
-For token creation and permission details, see the Atlassian docs:
+For details on creating tokens and configuring permissions, see the Atlassian documentation:
 
 - [Create an API token](https://support.atlassian.com/bitbucket-cloud/docs/create-an-api-token/)
 - [API token permissions](https://support.atlassian.com/bitbucket-cloud/docs/api-token-permissions/)
 
 ## Scope Guide
 
-Recommended read-only baseline:
+For read-only usage, start with this baseline set of scopes:
 
 - `read:repository:bitbucket`
 - `read:pullrequest:bitbucket`
@@ -163,7 +159,7 @@ Recommended read-only baseline:
 - `read:user:bitbucket`
 - `read:workspace:bitbucket`
 
-Add `write:*` scopes only for mutating commands.
+Only add `write:*` scopes when you need commands that create, update, or delete resources.
 
 <details>
 <summary>Command scope matrix</summary>
@@ -176,12 +172,12 @@ Add `write:*` scopes only for mutating commands.
 | `bb pipeline list/get/steps/log` | `read:repository`, `read:pipeline` |
 | `bb pipeline run` | `read:repository`, `read:pipeline`, `write:pipeline` |
 | `bb commit report list/get/put/delete` | `read:repository` |
-| `bb api` | varies by endpoint |
-| `bb completion`, `bb version` | none |
+| `bb api` | Varies by endpoint |
+| `bb completion`, `bb version` | None |
 
 </details>
 
 ## Developer Docs
 
-- [Technical spec](docs/spec.md)
+- [Technical specification](docs/spec.md)
 - [Command contracts](docs/command-contracts.md)
