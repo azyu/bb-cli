@@ -8,7 +8,7 @@
 ## Phases
 1. Rust migration reset (scope, plan/task tracker, docs baseline).
 2. Rust workspace bootstrap (`bb-cli` + `bb-core`) and shared foundations.
-3. MVP command port (`auth`, `api`, `repo`, `pr`, `pipeline`, `issue`, `wiki`, `completion`, `version`).
+3. MVP command port (`auth`, `api`, `repo`, `pr`, `pipeline`, `completion`, `version`). `issue` and `wiki` were ported, then removed in #58 after the Bitbucket Cloud sunset.
 4. Rust-only validation, release workflow conversion, and Go removal.
 
 ## Success Criteria
