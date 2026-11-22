@@ -134,6 +134,15 @@ This document is the contract baseline for `bb` command behavior.
 - Behavior note:
   - Running `bb` with no args also prints the current version in help output.
 
+## `bb skill`
+
+### `bb skill`
+- Purpose: Print the agent skill for coding agents (Claude Code, Codex, and similar) to stdout.
+- Output:
+  - Markdown with YAML frontmatter (`name: bitbucket-cli`, `description`), compiled into the binary from `rust/bb-core/src/SKILL.md`, so it matches the installed `bb` version.
+- Behavior note:
+  - Print only. `bb` does not install the skill into any agent directory.
+
 ## `bb pr`
 
 Naming rule: prefer Bitbucket API-aligned names (`get`, `update`, `request-changes`, `remove-request-changes`). GitHub CLI aliases accepted: `view`→`get`, `edit`→`update`, `close`→`decline`, `checks`→`statuses`.

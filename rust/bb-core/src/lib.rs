@@ -439,6 +439,7 @@ pub enum CommitRequest {
 pub enum Request {
     RootHelp,
     Version,
+    Skill,
     Completion(Option<String>),
     Auth(AuthRequest),
     Api(ApiRequest),

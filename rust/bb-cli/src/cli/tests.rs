@@ -469,3 +469,93 @@ fn removed_issue_and_wiki_groups_are_parse_errors() {
         );
     }
 }
+
+/// Every `bb ...` line in the skill's fenced code blocks must parse with the real clap definitions.
+#[test]
+fn skill_examples_parse() {
+    let mut checked = 0;
+    let mut in_fence = false;
+    for line in bb_core::render::skill().lines() {
+        if line.starts_with("```") {
+            in_fence = !in_fence;
+            continue;
+        }
+        let Some(start) = line.find("bb ") else {
+            continue;
+        };
+        let command = &line[start..];
+        // `<...>` marks a synopsis placeholder, not a runnable example.
+        if !in_fence
+            || command.contains('<')
+            || (start > 0 && !line[..start].trim_end().ends_with('|'))
+        {
+            continue;
+        }
+        let args = shell_words(command.split(" > ").next().unwrap());
+        match parse_from(&args) {
+            Ok(_) => {}
+            Err(error) if error.kind() == clap::error::ErrorKind::DisplayHelp => {}
+            Err(error) => panic!("skill example does not parse: {command}\n{error}"),
+        }
+        checked += 1;
+    }
+    assert!(checked > 20, "only {checked} examples found");
+}
+
+/// Every visible subcommand must appear in its group's `### <group>` section of the skill.
+#[test]
+fn skill_lists_every_subcommand() {
+    use clap::CommandFactory;
+    let skill = bb_core::render::skill();
+    for group in Cli::command()
+        .get_subcommands()
+        .filter(|c| !c.is_hide_set())
+    {
+        let header = format!("\n### {}\n", group.get_name());
+        let section = skill
+            .split_once(&header)
+            .unwrap_or_else(|| panic!("skill has no section {header:?}"))
+            .1;
+        let section = section.split("\n#").next().unwrap();
+        for sub in group.get_subcommands().filter(|c| !c.is_hide_set()) {
+            let name = sub.get_name();
+            assert!(
+                section.contains(&format!("`{name}`")) || section.contains(&format!("`{name} ")),
+                "skill section for `{}` does not mention `{name}`",
+                group.get_name()
+            );
+        }
+    }
+}
+
+/// Splits on spaces, keeping double- or single-quoted runs as one word (quotes removed).
+fn shell_words(line: &str) -> Vec<String> {
+    let mut words = Vec::new();
+    let mut word = String::new();
+    let mut quote = None;
+    let mut started = false;
+    for ch in line.chars() {
+        match (quote, ch) {
+            (Some(q), c) if c == q => quote = None,
+            (Some(_), c) => word.push(c),
+            (None, '"' | '\'') => {
+                quote = Some(ch);
+                started = true;
+            }
+            (None, ' ') => {
+                if started {
+                    words.push(std::mem::take(&mut word));
+                    started = false;
+                }
+            }
+            (None, c) => {
+                word.push(c);
+                started = true;
+            }
+        }
+    }
+    if started {
+        words.push(word);
+    }
+    words
+}

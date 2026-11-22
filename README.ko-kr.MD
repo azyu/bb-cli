@@ -119,6 +119,7 @@ bb completion zsh
 | `bb api` | Bitbucket Cloud raw API 엔드포인트 직접 호출 |
 | `bb completion` | `bash`, `zsh`, `fish`, `powershell` |
 | `bb version` | 빌드 정보 출력 |
+| `bb skill` | 코딩 에이전트용 skill(Markdown) 출력. 설치된 `bb` 버전과 내용이 일치 |
 
 > [!NOTE]
 > - 기존 PR을 대상으로 하는 명령은 PR ID를 위치 인자(`<id>`)나 `--id`로 넘길 수 있습니다. `bb pr comments 123`과 `bb pr comments --id 123`은 같게 동작합니다.
@@ -173,7 +174,7 @@ bb completion zsh
 | `bb pipeline run` | `read:repository`, `read:pipeline`, `write:pipeline` |
 | `bb commit report list/get/put/delete` | `read:repository` |
 | `bb api` | 호출하는 엔드포인트에 따라 다름 |
-| `bb completion`, `bb version` | 필요 없음 |
+| `bb completion`, `bb version`, `bb skill` | 필요 없음 |
 
 </details>
 

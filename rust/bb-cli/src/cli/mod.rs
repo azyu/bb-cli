@@ -77,6 +77,8 @@ enum Commands {
     Completion(CompletionArgs),
     /// Show build version metadata
     Version,
+    /// Print the agent skill (Markdown) for coding agents
+    Skill,
 }
 
 #[derive(Debug, clap::Args)]
@@ -155,6 +157,7 @@ fn map_request(cli: Cli) -> Request {
     match cli.command {
         None => Request::RootHelp,
         Some(Commands::Version) => Request::Version,
+        Some(Commands::Skill) => Request::Skill,
         Some(Commands::Completion(args)) => Request::Completion(args.shell),
         Some(Commands::Auth { command }) => auth::map_request(command, profile),
         Some(Commands::Api(args)) => api::map_request(args, profile),

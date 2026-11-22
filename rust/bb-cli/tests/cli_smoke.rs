@@ -71,6 +71,19 @@ fn version_prints_metadata() {
 }
 
 #[test]
+fn skill_prints_embedded_skill() {
+    let output = bb_command()
+        .arg("skill")
+        .output()
+        .expect("command should run");
+    assert!(output.status.success());
+
+    let stdout = String::from_utf8(output.stdout).expect("stdout should be utf-8");
+    assert_eq!(stdout, bb_core::render::skill());
+    assert!(stdout.starts_with("---\nname: bitbucket-cli\n"));
+}
+
+#[test]
 fn auth_status_without_login_writes_error_to_stderr() {
     let temp = tempdir().unwrap();
     let output = bb_command()
