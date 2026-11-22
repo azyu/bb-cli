@@ -119,6 +119,7 @@ bb completion zsh
 | `bb api` | Direct Bitbucket Cloud API requests |
 | `bb completion` | `bash`, `zsh`, `fish`, `powershell` |
 | `bb version` | Build metadata |
+| `bb skill` | Agent skill (Markdown) for coding agents, matching this `bb` version |
 
 > [!NOTE]
 > - Commands targeting an existing PR accept the ID positionally or with `--id` (`bb pr comments 123` and `bb pr comments --id 123` are equivalent).
@@ -173,7 +174,7 @@ Only add `write:*` scopes when you need commands that create, update, or delete 
 | `bb pipeline run` | `read:repository`, `read:pipeline`, `write:pipeline` |
 | `bb commit report list/get/put/delete` | `read:repository` |
 | `bb api` | Varies by endpoint |
-| `bb completion`, `bb version` | None |
+| `bb completion`, `bb version`, `bb skill` | None |
 
 </details>
 

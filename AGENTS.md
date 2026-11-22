@@ -167,6 +167,7 @@ Rules:
 ## Known Gotchas
 
 - Shell completions are hand-written string literals in `rust/bb-core/src/render.rs`, not generated from the clap definitions. Adding or renaming a subcommand needs four separate edits there (bash, zsh, fish, powershell) plus the matching `*_usage()` help text; clap alone will not pick it up, and no test currently fails if you forget.
+- The agent skill (`bb skill`) is `rust/bb-core/src/SKILL.md`. It used to live outside the repo and drifted: it never listed `bb auth list`/`switch` after they shipped. Tests in `rust/bb-cli/src/cli/tests.rs` now fail when a top-level group or one of its visible direct subcommands is missing from the skill's `### <group>` sections or a fenced `bb ...` example stops parsing, but they cannot check prose rules (defaults, traps), so update those by hand when behavior changes.
 - Bitbucket Cloud and Data Center APIs differ significantly; do not mix them accidentally.
 - For list endpoints, rely on API-provided pagination (`next`) instead of hand-built page URLs.
 - Keep auth design aligned with current Bitbucket Cloud recommendations; avoid deprecated defaults.

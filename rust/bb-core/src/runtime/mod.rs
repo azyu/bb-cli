@@ -62,6 +62,9 @@ fn dispatch<R: BufRead, O: Write, E: Write>(
                 version::BUILD_DATE
             )?;
         }
+        Request::Skill => {
+            write!(stdout, "{}", render::skill())?;
+        }
         Request::Completion(shell) => {
             let Some(shell) = shell.as_deref() else {
                 write!(stdout, "{}", render::completion_usage())?;

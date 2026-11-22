@@ -19,7 +19,7 @@
 
 ## Supported Scope
 - Bitbucket Cloud only.
-- Supported top-level command groups are `auth`, `api`, `repo`, `pr`, `pipeline`, `commit`, `completion`, and `version`.
+- Supported top-level command groups are `auth`, `api`, `repo`, `pr`, `pipeline`, `commit`, `completion`, `version`, and `skill`.
 - Bitbucket Cloud removed native Issues and Wikis on 2026-08-20 (issue endpoints return `410 Gone`, wiki Git remotes return `Not Found`); `bb issue` and `bb wiki` were removed in #58.
 - Local Git workflow helpers such as `bb pr checkout` remain out of scope.
 - Detailed subcommand contracts live only in `docs/command-contracts.md`.
@@ -75,6 +75,8 @@
 - `bb pipeline list` defaults to `sort=-created_on` so its bounded first page contains the most recent pipelines; an explicit `--sort` value overrides the default.
 - Prefer Bitbucket API-aligned naming (`get`, `update`, `request-changes`, `remove-request-changes`). GitHub CLI aliases accepted: `view`→`get`, `edit`→`update`, `close`→`decline`, `checks`→`statuses`.
 - GitHub CLI `--body` is accepted as a visible alias for PR `--description` and comment `--content`.
+
+- The agent skill printed by `bb skill` is `rust/bb-core/src/SKILL.md`, embedded with `include_str!`. `bb-cli` tests parse every `bb ...` example in its code blocks with the clap definitions and require every top-level group to have a `### <group>` section naming each of its visible direct subcommands (nested ones such as `commit report list` are not checked), so command-surface changes must update the skill in the same change.
 
 ## Bitbucket Client Rules
 - Interactive `bb pr list --all` writes page progress to stderr only when stderr is a TTY; piped and captured executions remain quiet.

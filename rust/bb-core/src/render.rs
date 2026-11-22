@@ -65,7 +65,7 @@ pub fn project_json_list(values: &[Value], fields: &[String]) -> Vec<Value> {
 
 pub fn root_usage() -> String {
     format!(
-        "bb - Bitbucket CLI (Cloud MVP)\nVersion: {}\n\nUsage:\n  bb <command> [subcommand] [flags]\n\nCommands:\n  auth       Authenticate and inspect auth status\n  api        Call Bitbucket Cloud REST endpoints\n  repo       Repository operations\n  version    Show CLI version metadata\n  pr         Pull request operations\n  pipeline   Pipeline operations\n  commit     Commit operations (Code Insights reports)\n  completion Shell completion\n\nQuick start:\n  bb auth login --token \"$BITBUCKET_TOKEN\" --username you@example.com\n  bb pr create --workspace acme --repo widgets --title \"Add widget support\" --source feature/widgets --destination main\n  bb pr comments 123 --workspace acme --repo widgets\n\nNotes:\n  - Add --output json when an agent needs machine-readable output.\n  - In a cloned Bitbucket repo, repo-scoped commands can infer --workspace and --repo.\n",
+        "bb - Bitbucket CLI (Cloud MVP)\nVersion: {}\n\nUsage:\n  bb <command> [subcommand] [flags]\n\nCommands:\n  auth       Authenticate and inspect auth status\n  api        Call Bitbucket Cloud REST endpoints\n  repo       Repository operations\n  version    Show CLI version metadata\n  pr         Pull request operations\n  pipeline   Pipeline operations\n  commit     Commit operations (Code Insights reports)\n  completion Shell completion\n  skill      Print the agent skill for coding agents\n\nQuick start:\n  bb auth login --token \"$BITBUCKET_TOKEN\" --username you@example.com\n  bb pr create --workspace acme --repo widgets --title \"Add widget support\" --source feature/widgets --destination main\n  bb pr comments 123 --workspace acme --repo widgets\n\nNotes:\n  - Add --output json when an agent needs machine-readable output.\n  - In a cloned Bitbucket repo, repo-scoped commands can infer --workspace and --repo.\n",
         version::display_version()
     )
 }
@@ -98,6 +98,11 @@ pub fn completion_usage() -> &'static str {
     "Generate shell completion scripts\n\nUsage:\n  bb completion <shell>\n\nShells:\n  bash         Bash completion\n  zsh          Zsh completion\n  fish         Fish completion\n  powershell   PowerShell completion\n"
 }
 
+/// Agent skill printed by `bb skill`; compiled in so it always matches this binary.
+pub fn skill() -> &'static str {
+    include_str!("SKILL.md")
+}
+
 pub fn bash_completion_script() -> &'static str {
     r#"_bb_complete() {
   local cur="${COMP_WORDS[COMP_CWORD]}"
@@ -110,7 +115,7 @@ pub fn bash_completion_script() -> &'static str {
     commit)     COMPREPLY=($(compgen -W "report" -- "${cur}")); return;;
     completion) COMPREPLY=($(compgen -W "bash zsh fish powershell" -- "${cur}")); return;;
   esac
-  local cmds="auth api repo pr pipeline commit completion version help"
+  local cmds="auth api repo pr pipeline commit completion version skill help"
   COMPREPLY=($(compgen -W "${cmds}" -- "${cur}"))
 }
 complete -F _bb_complete bb"#
@@ -120,7 +125,7 @@ pub fn zsh_completion_script() -> &'static str {
     r#"#compdef bb
 _bb() {
   local -a commands subcmds
-  commands=(auth api repo pr pipeline commit completion version help)
+  commands=(auth api repo pr pipeline commit completion version skill help)
   _arguments "1:command:($commands)" "*::arg:->args"
   case $words[1] in
     auth)       subcmds=(login status list switch logout);;
@@ -136,7 +141,7 @@ compdef _bb bb"#
 }
 
 pub fn fish_completion_script() -> &'static str {
-    r#"complete -c bb -f -n '__fish_use_subcommand' -a "auth api repo pr pipeline commit completion version help"
+    r#"complete -c bb -f -n '__fish_use_subcommand' -a "auth api repo pr pipeline commit completion version skill help"
 complete -c bb -f -n '__fish_seen_subcommand_from auth' -a "login status list switch logout"
 complete -c bb -f -n '__fish_seen_subcommand_from repo' -a "list"
 complete -c bb -f -n '__fish_seen_subcommand_from pr' -a "list create merge get update approve unapprove request-changes remove-request-changes decline comment comment-update comments diff diffstat statuses activity"
@@ -162,7 +167,7 @@ pub fn powershell_completion_script() -> &'static str {
       Where-Object { $_ -like "$wordToComplete*" } |
       ForEach-Object { [System.Management.Automation.CompletionResult]::new($_, $_, 'ParameterValue', $_) }
   } else {
-    "auth","api","repo","pr","pipeline","commit","completion","version","help" |
+    "auth","api","repo","pr","pipeline","commit","completion","version","skill","help" |
       Where-Object { $_ -like "$wordToComplete*" } |
       ForEach-Object { [System.Management.Automation.CompletionResult]::new($_, $_, 'ParameterValue', $_) }
   }
