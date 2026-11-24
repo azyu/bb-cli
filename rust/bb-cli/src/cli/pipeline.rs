@@ -1,6 +1,6 @@
 use bb_core::{
     PipelineGetRequest, PipelineListRequest, PipelineLogRequest, PipelineRequest,
-    PipelineRunRequest, PipelineStepsRequest, Request,
+    PipelineRunRequest, PipelineStepsRequest, PipelineStopRequest, Request,
 };
 use clap::{Args, Subcommand};
 
@@ -16,6 +16,9 @@ pub(super) enum PipelineCommands {
     Log(PipelineLogArgs),
     /// Run a pipeline for a branch
     Run(PipelineRunArgs),
+    /// Stop a pipeline
+    #[command(visible_alias = "cancel")]
+    Stop(PipelineStopArgs),
 }
 
 #[derive(Debug, Args)]
@@ -119,6 +122,22 @@ pub(super) struct PipelineRunArgs {
     pub(super) output: String,
 }
 
+#[derive(Debug, Args)]
+pub(super) struct PipelineStopArgs {
+    #[arg(long)]
+    pub(super) workspace: Option<String>,
+    #[arg(long)]
+    pub(super) repo: Option<String>,
+    #[arg(long, conflicts_with = "build")]
+    pub(super) uuid: Option<String>,
+    #[arg(long, conflicts_with = "uuid")]
+    pub(super) build: Option<String>,
+    #[arg(index = 1, value_name = "SELECTOR", conflicts_with_all = ["uuid", "build"])]
+    pub(super) selector: Option<String>,
+    #[arg(long, default_value = "text")]
+    pub(super) output: String,
+}
+
 pub(super) fn map_request(command: Option<PipelineCommands>, profile: Option<String>) -> Request {
     Request::Pipeline(match command {
         None => PipelineRequest::Help,
@@ -171,6 +190,15 @@ pub(super) fn map_request(command: Option<PipelineCommands>, profile: Option<Str
             workspace: args.workspace,
             repo: args.repo,
             branch: args.branch,
+            profile,
+            output: args.output,
+        }),
+        Some(PipelineCommands::Stop(args)) => PipelineRequest::Stop(PipelineStopRequest {
+            workspace: args.workspace,
+            repo: args.repo,
+            uuid: args.uuid,
+            build: args.build,
+            positional_selector: args.selector,
             profile,
             output: args.output,
         }),

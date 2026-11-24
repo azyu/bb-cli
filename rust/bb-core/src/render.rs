@@ -65,7 +65,7 @@ pub fn project_json_list(values: &[Value], fields: &[String]) -> Vec<Value> {
 
 pub fn root_usage() -> String {
     format!(
-        "bb - Bitbucket CLI (Cloud MVP)\nVersion: {}\n\nUsage:\n  bb <command> [subcommand] [flags]\n\nCommands:\n  auth       Authenticate and inspect auth status\n  api        Call Bitbucket Cloud REST endpoints\n  repo       Repository operations\n  version    Show CLI version metadata\n  pr         Pull request operations\n  pipeline   Pipeline operations\n  commit     Commit operations (Code Insights reports)\n  completion Shell completion\n  skill      Print the agent skill for coding agents\n\nQuick start:\n  bb auth login --token \"$BITBUCKET_TOKEN\" --username you@example.com\n  bb pr create --workspace acme --repo widgets --title \"Add widget support\" --source feature/widgets --destination main\n  bb pr comments 123 --workspace acme --repo widgets\n\nNotes:\n  - Add --output json when an agent needs machine-readable output.\n  - In a cloned Bitbucket repo, repo-scoped commands can infer --workspace and --repo.\n",
+        "bb - Bitbucket CLI (Cloud MVP)\nVersion: {}\n\nUsage:\n  bb <command> [subcommand] [flags]\n\nCommands:\n  auth       Authenticate and inspect auth status\n  api        Call Bitbucket Cloud REST endpoints\n  repo       Repository operations\n  version    Show CLI version metadata\n  pr         Pull request operations\n  pipeline   Pipeline operations\n  commit     Commit operations (reports, statuses)\n  completion Shell completion\n  skill      Print the agent skill for coding agents\n\nQuick start:\n  bb auth login --token \"$BITBUCKET_TOKEN\" --username you@example.com\n  bb pr create --workspace acme --repo widgets --title \"Add widget support\" --source feature/widgets --destination main\n  bb pr comments 123 --workspace acme --repo widgets\n\nNotes:\n  - Add --output json when an agent needs machine-readable output.\n  - In a cloned Bitbucket repo, repo-scoped commands can infer --workspace and --repo.\n",
         version::display_version()
     )
 }
@@ -83,15 +83,19 @@ pub fn pr_usage() -> &'static str {
 }
 
 pub fn pipeline_usage() -> &'static str {
-    "Pipeline operations\n\nUsage:\n  bb pipeline <command>\n\nCommands:\n  list   List pipelines\n  get    Get a pipeline\n  steps  List pipeline steps\n  log    Get a pipeline step log\n  run    Trigger a pipeline\n"
+    "Pipeline operations\n\nUsage:\n  bb pipeline <command>\n\nCommands:\n  list   List pipelines\n  get    Get a pipeline\n  steps  List pipeline steps\n  log    Get a pipeline step log\n  run    Trigger a pipeline\n  stop   Stop a pipeline (alias: cancel)\n"
 }
 
 pub fn commit_usage() -> &'static str {
-    "Commit operations\n\nUsage:\n  bb commit <command>\n\nCommands:\n  report  Manage Code Insights reports on a commit\n"
+    "Commit operations\n\nUsage:\n  bb commit <command>\n\nCommands:\n  report  Manage Code Insights reports on a commit\n  status  Manage build statuses on a commit\n"
 }
 
 pub fn commit_report_usage() -> &'static str {
     "Code Insights report operations\n\nUsage:\n  bb commit report <command> --commit <SHA> [--id <REPORT_ID>]\n\nCommands:\n  list    List reports on a commit\n  get     Get a report\n  put     Create or update a report from a JSON body\n  delete  Delete a report\n"
+}
+
+pub fn commit_status_usage() -> &'static str {
+    "Commit build status operations\n\nUsage:\n  bb commit status <command> --commit <SHA> [--key <KEY>]\n\nCommands:\n  list    List statuses on a commit\n  get     Get a build status (alias: view)\n  create  Create a build status\n  update  Update a build status (alias: edit)\n"
 }
 
 pub fn completion_usage() -> &'static str {
@@ -107,12 +111,20 @@ pub fn bash_completion_script() -> &'static str {
     r#"_bb_complete() {
   local cur="${COMP_WORDS[COMP_CWORD]}"
   local prev="${COMP_WORDS[COMP_CWORD-1]}"
+  local cmd="${COMP_WORDS[1]}"
+  if [[ "${cmd}" == "commit" ]]; then
+    case "${prev}" in
+      commit) COMPREPLY=($(compgen -W "report status" -- "${cur}")); return;;
+      report) COMPREPLY=($(compgen -W "list get put delete" -- "${cur}")); return;;
+      status) COMPREPLY=($(compgen -W "list get view create update edit" -- "${cur}")); return;;
+    esac
+  fi
   case "${prev}" in
     auth)       COMPREPLY=($(compgen -W "login status list switch logout" -- "${cur}")); return;;
     repo)       COMPREPLY=($(compgen -W "list" -- "${cur}")); return;;
     pr)         COMPREPLY=($(compgen -W "list create merge get update approve unapprove request-changes remove-request-changes decline comment comment-update comments diff diffstat statuses activity" -- "${cur}")); return;;
-    pipeline)   COMPREPLY=($(compgen -W "list get steps log run" -- "${cur}")); return;;
-    commit)     COMPREPLY=($(compgen -W "report" -- "${cur}")); return;;
+    pipeline)   COMPREPLY=($(compgen -W "list get steps log run stop cancel" -- "${cur}")); return;;
+    commit)     COMPREPLY=($(compgen -W "report status" -- "${cur}")); return;;
     completion) COMPREPLY=($(compgen -W "bash zsh fish powershell" -- "${cur}")); return;;
   esac
   local cmds="auth api repo pr pipeline commit completion version skill help"
@@ -131,8 +143,14 @@ _bb() {
     auth)       subcmds=(login status list switch logout);;
     repo)       subcmds=(list);;
     pr)         subcmds=(list create merge get update approve unapprove request-changes remove-request-changes decline comment comment-update comments diff diffstat statuses activity);;
-    pipeline)   subcmds=(list get steps log run);;
-    commit)     subcmds=(report);;
+    pipeline)   subcmds=(list get steps log run stop cancel);;
+    commit)
+      case $words[2] in
+        report) subcmds=(list get put delete);;
+        status) subcmds=(list get view create update edit);;
+        *)      subcmds=(report status);;
+      esac
+      ;;
     completion) subcmds=(bash zsh fish powershell);;
   esac
   [[ -n "$subcmds" ]] && _describe 'subcommand' subcmds
@@ -145,8 +163,10 @@ pub fn fish_completion_script() -> &'static str {
 complete -c bb -f -n '__fish_seen_subcommand_from auth' -a "login status list switch logout"
 complete -c bb -f -n '__fish_seen_subcommand_from repo' -a "list"
 complete -c bb -f -n '__fish_seen_subcommand_from pr' -a "list create merge get update approve unapprove request-changes remove-request-changes decline comment comment-update comments diff diffstat statuses activity"
-complete -c bb -f -n '__fish_seen_subcommand_from pipeline' -a "list get steps log run"
-complete -c bb -f -n '__fish_seen_subcommand_from commit' -a "report"
+complete -c bb -f -n '__fish_seen_subcommand_from pipeline' -a "list get steps log run stop cancel"
+complete -c bb -f -n '__fish_seen_subcommand_from commit; and not __fish_seen_subcommand_from report status' -a "report status"
+complete -c bb -f -n '__fish_seen_subcommand_from commit; and __fish_seen_subcommand_from report' -a "list get put delete"
+complete -c bb -f -n '__fish_seen_subcommand_from commit; and __fish_seen_subcommand_from status' -a "list get view create update edit"
 complete -c bb -f -n '__fish_seen_subcommand_from completion' -a "bash zsh fish powershell""#
 }
 
@@ -158,11 +178,19 @@ pub fn powershell_completion_script() -> &'static str {
     'auth'       = @('login','status','list','switch','logout')
     'repo'       = @('list')
     'pr'         = @('list','create','merge','get','update','approve','unapprove','request-changes','remove-request-changes','decline','comment','comment-update','comments','diff','diffstat','statuses','activity')
-    'pipeline'   = @('list','get','steps','log','run')
-    'commit'     = @('report')
+    'pipeline'   = @('list','get','steps','log','run','stop','cancel')
+    'commit'     = @('report','status')
     'completion' = @('bash','zsh','fish','powershell')
   }
-  if ($tokens.Count -ge 2 -and $subcmds.ContainsKey($tokens[1])) {
+  $commitSubcmds = @{
+    'report' = @('list','get','put','delete')
+    'status' = @('list','get','view','create','update','edit')
+  }
+  if ($tokens.Count -ge 3 -and $tokens[1] -eq 'commit' -and $commitSubcmds.ContainsKey($tokens[2])) {
+    $commitSubcmds[$tokens[2]] |
+      Where-Object { $_ -like "$wordToComplete*" } |
+      ForEach-Object { [System.Management.Automation.CompletionResult]::new($_, $_, 'ParameterValue', $_) }
+  } elseif ($tokens.Count -ge 2 -and $subcmds.ContainsKey($tokens[1])) {
     $subcmds[$tokens[1]] |
       Where-Object { $_ -like "$wordToComplete*" } |
       ForEach-Object { [System.Management.Automation.CompletionResult]::new($_, $_, 'ParameterValue', $_) }

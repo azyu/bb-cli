@@ -2880,7 +2880,636 @@ fn root_help_and_completions_omit_removed_issue_and_wiki_groups() {
         assert!(output.status.success());
         let script = String::from_utf8(output.stdout).expect("utf-8");
         assert!(script.contains("commit"), "{shell}");
+        assert!(script.contains("stop"), "{shell}");
+        assert!(script.contains("cancel"), "{shell}");
+        assert!(script.contains("create"), "{shell}");
+        assert!(script.contains("report"), "{shell}");
+        assert!(
+            script.contains("report status") || script.contains("'report','status'"),
+            "{shell} should complete commit subcommands: {script}"
+        );
+        assert!(
+            script.contains("list get view create update edit")
+                || script.contains("'list','get','view','create','update','edit'"),
+            "{shell} should complete commit status subcommands: {script}"
+        );
         assert!(!script.contains("issue"), "{shell}");
         assert!(!script.contains("wiki"), "{shell}");
     }
+}
+
+#[test]
+fn pipeline_stop_uuid_text_posts_stop_pipeline() {
+    let server = MockServer::start();
+    let stop = server.mock(|when, then| {
+        when.method(POST)
+            .path("/2.0/repositories/acme/widgets/pipelines/%7Bpipe-123%7D/stopPipeline");
+        then.status(204);
+    });
+    let (_temp, config_path) = report_config(&server);
+
+    let output = bb_command()
+        .args(["pipeline", "stop", "{pipe-123}", "-R", "acme/widgets"])
+        .env("BB_CONFIG_PATH", &config_path)
+        .output()
+        .expect("command should run");
+
+    assert!(output.status.success(), "{output:?}");
+    let stdout = String::from_utf8(output.stdout).expect("stdout should be utf-8");
+    assert_eq!(stdout, "Requested stop for pipeline {pipe-123}\n");
+    stop.assert();
+}
+
+#[test]
+fn pipeline_cancel_alias_build_json_resolves_uuid_and_stops() {
+    let server = MockServer::start();
+    let lookup = server.mock(|when, then| {
+        when.method(GET)
+            .path("/2.0/repositories/acme/widgets/pipelines/14588");
+        then.json_body(json!({
+            "build_number": 14588,
+            "uuid": "{pipe-123}"
+        }));
+    });
+    let stop = server.mock(|when, then| {
+        when.method(POST)
+            .path("/2.0/repositories/acme/widgets/pipelines/%7Bpipe-123%7D/stopPipeline");
+        then.status(204);
+    });
+    let (_temp, config_path) = report_config(&server);
+
+    let output = bb_command()
+        .args([
+            "pipeline",
+            "cancel",
+            "14588",
+            "-R",
+            "acme/widgets",
+            "--output",
+            "json",
+        ])
+        .env("BB_CONFIG_PATH", &config_path)
+        .output()
+        .expect("command should run");
+
+    assert!(output.status.success(), "{output:?}");
+    let body: serde_json::Value = serde_json::from_slice(&output.stdout).expect("json");
+    assert_eq!(
+        body,
+        json!({"uuid": "{pipe-123}", "action": "stop_requested", "ok": true})
+    );
+    lookup.assert();
+    stop.assert();
+}
+
+#[test]
+fn pipeline_stop_rejects_path_traversal_uuid_before_any_request() {
+    let server = MockServer::start();
+    let any = server.mock(|when, then| {
+        when.any_request();
+        then.status(204);
+    });
+    let (_temp, config_path) = report_config(&server);
+
+    let output = bb_command()
+        .args([
+            "pipeline",
+            "stop",
+            "--uuid",
+            r"{..\..\widgets}",
+            "-R",
+            "acme/widgets",
+            "--output",
+            "json",
+        ])
+        .env("BB_CONFIG_PATH", &config_path)
+        .output()
+        .expect("command should run");
+
+    assert!(!output.status.success());
+    let body: serde_json::Value = serde_json::from_slice(&output.stdout).expect("json error");
+    assert_eq!(body["error"]["code"], "invalid_input");
+    any.assert_hits(0);
+}
+
+#[test]
+fn pipeline_stop_rejects_redirected_200_response() {
+    let server = MockServer::start();
+    let login = server.mock(|when, then| {
+        when.method(GET).path("/login");
+        then.status(200).body("<html>login</html>");
+    });
+    let stop = server.mock(|when, then| {
+        when.method(POST)
+            .path("/2.0/repositories/acme/widgets/pipelines/%7Bpipe-123%7D/stopPipeline");
+        then.status(302)
+            .header("location", format!("{}/login", server.base_url()));
+    });
+    let (_temp, config_path) = report_config(&server);
+
+    let output = bb_command()
+        .args([
+            "pipeline",
+            "stop",
+            "{pipe-123}",
+            "-R",
+            "acme/widgets",
+            "--output",
+            "json",
+        ])
+        .env("BB_CONFIG_PATH", &config_path)
+        .output()
+        .expect("command should run");
+
+    assert!(!output.status.success(), "redirected 200 must fail");
+    let body: serde_json::Value = serde_json::from_slice(&output.stdout).expect("json error");
+    assert_eq!(body["error"]["code"], "api_error");
+    stop.assert();
+    login.assert();
+}
+
+const STATUS_BUILD_PATH: &str =
+    "/2.0/repositories/acme/widgets/commit/110daa97/statuses/build/ci-build";
+
+#[test]
+fn commit_status_list_renders_table_and_passes_query_params() {
+    let server = MockServer::start();
+    let list = server.mock(|when, then| {
+        when.method(GET)
+            .path("/2.0/repositories/acme/widgets/commit/110daa97/statuses")
+            .query_param("q", "state=\"SUCCESSFUL\"")
+            .query_param("sort", "-updated_on");
+        then.json_body(json!({"values": [{
+            "key": "ci-build",
+            "state": "SUCCESSFUL",
+            "name": "CI Build #42",
+            "updated_on": "2026-11-24T00:00:00Z"
+        }]}));
+    });
+    let (_temp, config_path) = report_config(&server);
+
+    let output = bb_command()
+        .args([
+            "commit",
+            "status",
+            "list",
+            "-R",
+            "acme/widgets",
+            "--commit",
+            "110daa97",
+            "--q",
+            "state=\"SUCCESSFUL\"",
+            "--sort=-updated_on",
+        ])
+        .env("BB_CONFIG_PATH", &config_path)
+        .output()
+        .expect("command should run");
+
+    assert!(output.status.success(), "{output:?}");
+    let stdout = String::from_utf8(output.stdout).expect("stdout should be utf-8");
+    assert!(stdout.contains("KEY"), "{stdout}");
+    assert!(stdout.contains("ci-build"), "{stdout}");
+    assert!(stdout.contains("SUCCESSFUL"), "{stdout}");
+    assert!(stdout.contains("CI Build #42"), "{stdout}");
+    list.assert();
+}
+
+#[test]
+fn commit_status_list_json_fields_projects_status_objects() {
+    let server = MockServer::start();
+    let list = server.mock(|when, then| {
+        when.method(GET)
+            .path("/2.0/repositories/acme/widgets/commit/110daa97/statuses");
+        then.json_body(json!({"values": [{
+            "key": "ci-build",
+            "state": "FAILED",
+            "name": "CI Build #42",
+            "url": "https://ci.example.com/builds/42"
+        }]}));
+    });
+    let (_temp, config_path) = report_config(&server);
+
+    let output = bb_command()
+        .args([
+            "commit",
+            "status",
+            "list",
+            "-R",
+            "acme/widgets",
+            "--commit",
+            "110daa97",
+            "--output",
+            "json",
+            "--json-fields",
+            "key,state",
+        ])
+        .env("BB_CONFIG_PATH", &config_path)
+        .output()
+        .expect("command should run");
+
+    assert!(output.status.success(), "{output:?}");
+    let body: serde_json::Value = serde_json::from_slice(&output.stdout).expect("json");
+    assert_eq!(body, json!([{"key": "ci-build", "state": "FAILED"}]));
+    list.assert();
+}
+
+#[test]
+fn commit_status_get_and_view_alias_return_status() {
+    let server = MockServer::start();
+    let get = server.mock(|when, then| {
+        when.method(GET).path(STATUS_BUILD_PATH);
+        then.json_body(json!({
+            "key": "ci-build",
+            "state": "SUCCESSFUL",
+            "name": "CI Build #42",
+            "url": "https://ci.example.com/builds/42",
+            "description": "All tests passed",
+            "refname": "main"
+        }));
+    });
+    let (_temp, config_path) = report_config(&server);
+
+    let output = bb_command()
+        .args([
+            "commit",
+            "status",
+            "get",
+            "-R",
+            "acme/widgets",
+            "--commit",
+            "110daa97",
+            "--key",
+            "ci-build",
+        ])
+        .env("BB_CONFIG_PATH", &config_path)
+        .output()
+        .expect("command should run");
+
+    assert!(output.status.success(), "{output:?}");
+    let stdout = String::from_utf8(output.stdout).expect("stdout should be utf-8");
+    assert!(
+        stdout.contains("Status ci-build (SUCCESSFUL): CI Build #42"),
+        "{stdout}"
+    );
+    assert!(
+        stdout.contains("URL: https://ci.example.com/builds/42"),
+        "{stdout}"
+    );
+    assert!(stdout.contains("Description: All tests passed"), "{stdout}");
+    assert!(stdout.contains("Ref: main"), "{stdout}");
+
+    let output = bb_command()
+        .args([
+            "commit",
+            "status",
+            "view",
+            "-R",
+            "acme/widgets",
+            "--commit",
+            "110daa97",
+            "--key",
+            "ci-build",
+            "--output",
+            "json",
+            "--json-fields",
+            "key,state",
+        ])
+        .env("BB_CONFIG_PATH", &config_path)
+        .output()
+        .expect("command should run");
+
+    assert!(output.status.success(), "{output:?}");
+    let body: serde_json::Value = serde_json::from_slice(&output.stdout).expect("json");
+    assert_eq!(body, json!({"key": "ci-build", "state": "SUCCESSFUL"}));
+    get.assert_hits(2);
+}
+
+#[test]
+fn commit_status_create_with_flags_posts_build_status() {
+    let server = MockServer::start();
+    let create = server.mock(|when, then| {
+        when.method(POST)
+            .path("/2.0/repositories/acme/widgets/commit/110daa97/statuses/build")
+            .json_body(json!({
+                "key": "ci-build",
+                "state": "SUCCESSFUL",
+                "url": "https://ci.example.com/builds/42",
+                "name": "CI Build #42",
+                "description": "All tests passed",
+                "refname": "main"
+            }));
+        then.status(201).json_body(json!({
+            "key": "ci-build",
+            "state": "SUCCESSFUL",
+            "url": "https://ci.example.com/builds/42",
+            "name": "CI Build #42",
+            "description": "All tests passed",
+            "refname": "main"
+        }));
+    });
+    let (_temp, config_path) = report_config(&server);
+
+    let output = bb_command()
+        .args([
+            "commit",
+            "status",
+            "create",
+            "-R",
+            "acme/widgets",
+            "--commit",
+            "110daa97",
+            "--key",
+            "ci-build",
+            "--state",
+            "successful",
+            "--url",
+            "https://ci.example.com/builds/42",
+            "--name",
+            "CI Build #42",
+            "--description",
+            "All tests passed",
+            "--refname",
+            "main",
+        ])
+        .env("BB_CONFIG_PATH", &config_path)
+        .output()
+        .expect("command should run");
+
+    assert!(output.status.success(), "{output:?}");
+    let stdout = String::from_utf8(output.stdout).expect("stdout should be utf-8");
+    assert!(
+        stdout.starts_with("Created status ci-build (SUCCESSFUL): CI Build #42\n"),
+        "{stdout}"
+    );
+    create.assert();
+}
+
+#[test]
+fn commit_status_create_with_stdin_input_posts_raw_json() {
+    let server = MockServer::start();
+    let create = server.mock(|when, then| {
+        when.method(POST)
+            .path("/2.0/repositories/acme/widgets/commit/110daa97/statuses/build")
+            .json_body(json!({
+                "key": "ci/custom",
+                "state": "INPROGRESS",
+                "url": "https://ci.example.com/builds/43"
+            }));
+        then.status(201).json_body(json!({
+            "key": "ci/custom",
+            "state": "INPROGRESS",
+            "url": "https://ci.example.com/builds/43"
+        }));
+    });
+    let (_temp, config_path) = report_config(&server);
+
+    let output = AssertCommand::from_std(bb_command())
+        .args([
+            "commit",
+            "status",
+            "create",
+            "-R",
+            "acme/widgets",
+            "--commit",
+            "110daa97",
+            "--input",
+            "-",
+            "--output",
+            "json",
+        ])
+        .env("BB_CONFIG_PATH", &config_path)
+        .write_stdin(
+            r#"{"key":"ci/custom","state":"INPROGRESS","url":"https://ci.example.com/builds/43"}"#,
+        )
+        .timeout(Duration::from_secs(30))
+        .output()
+        .expect("command should run");
+
+    assert!(output.status.success(), "{output:?}");
+    let body: serde_json::Value = serde_json::from_slice(&output.stdout).expect("json");
+    assert_eq!(body["key"], "ci/custom");
+    assert_eq!(body["state"], "INPROGRESS");
+    create.assert();
+}
+
+#[test]
+fn commit_status_update_and_edit_alias_put_build_status() {
+    let server = MockServer::start();
+    let put_flags = server.mock(|when, then| {
+        when.method(PUT).path(STATUS_BUILD_PATH).json_body(json!({
+            "state": "FAILED"
+        }));
+        then.json_body(json!({
+            "key": "ci-build",
+            "state": "FAILED"
+        }));
+    });
+    let (_temp, config_path) = report_config(&server);
+
+    let output = bb_command()
+        .args([
+            "commit",
+            "status",
+            "edit",
+            "-R",
+            "acme/widgets",
+            "--commit",
+            "110daa97",
+            "--key",
+            "ci-build",
+            "--state",
+            "failed",
+        ])
+        .env("BB_CONFIG_PATH", &config_path)
+        .output()
+        .expect("command should run");
+
+    assert!(output.status.success(), "{output:?}");
+    let stdout = String::from_utf8(output.stdout).expect("stdout should be utf-8");
+    assert_eq!(stdout, "Updated status ci-build (FAILED)\n");
+    put_flags.assert();
+}
+
+#[test]
+fn commit_status_create_rejects_non_object_input_json_before_any_request() {
+    let server = MockServer::start();
+    let any = server.mock(|when, then| {
+        when.any_request();
+        then.status(500);
+    });
+    let (_temp, config_path) = report_config(&server);
+
+    for raw in ["[]", "null"] {
+        let output = AssertCommand::from_std(bb_command())
+            .args([
+                "commit",
+                "status",
+                "create",
+                "-R",
+                "acme/widgets",
+                "--commit",
+                "110daa97",
+                "--input",
+                "-",
+                "--output",
+                "json",
+            ])
+            .env("BB_CONFIG_PATH", &config_path)
+            .write_stdin(raw)
+            .timeout(Duration::from_secs(30))
+            .output()
+            .expect("command should run");
+
+        assert!(!output.status.success(), "{raw} should be rejected");
+        let body: serde_json::Value = serde_json::from_slice(&output.stdout).expect("json error");
+        assert_eq!(body["error"]["code"], "invalid_input", "{raw}");
+    }
+    any.assert_hits(0);
+}
+
+#[test]
+fn commit_status_update_with_stdin_input_puts_raw_json() {
+    let server = MockServer::start();
+    let put = server.mock(|when, then| {
+        when.method(PUT).path(STATUS_BUILD_PATH).json_body(json!({
+            "state": "STOPPED",
+            "url": "https://ci.example.com/builds/42"
+        }));
+        then.json_body(json!({
+            "key": "ci-build",
+            "state": "STOPPED",
+            "url": "https://ci.example.com/builds/42"
+        }));
+    });
+    let (_temp, config_path) = report_config(&server);
+
+    let output = AssertCommand::from_std(bb_command())
+        .args([
+            "commit",
+            "status",
+            "update",
+            "-R",
+            "acme/widgets",
+            "--commit",
+            "110daa97",
+            "--key",
+            "ci-build",
+            "--input",
+            "-",
+            "--output",
+            "json",
+        ])
+        .env("BB_CONFIG_PATH", &config_path)
+        .write_stdin(r#"{"state":"STOPPED","url":"https://ci.example.com/builds/42"}"#)
+        .timeout(Duration::from_secs(30))
+        .output()
+        .expect("command should run");
+
+    assert!(output.status.success(), "{output:?}");
+    let body: serde_json::Value = serde_json::from_slice(&output.stdout).expect("json");
+    assert_eq!(body["state"], "STOPPED");
+    put.assert();
+}
+
+#[test]
+fn commit_status_rejects_invalid_state_and_path_traversal_key_before_any_request() {
+    let server = MockServer::start();
+    let any = server.mock(|when, then| {
+        when.any_request();
+        then.status(500);
+    });
+    let (_temp, config_path) = report_config(&server);
+
+    // Invalid state on create
+    let output = bb_command()
+        .args([
+            "commit",
+            "status",
+            "create",
+            "-R",
+            "acme/widgets",
+            "--commit",
+            "110daa97",
+            "--key",
+            "ci-build",
+            "--state",
+            "PENDING",
+            "--url",
+            "https://ci.example.com/builds/42",
+            "--output",
+            "json",
+        ])
+        .env("BB_CONFIG_PATH", &config_path)
+        .output()
+        .expect("command should run");
+    assert!(!output.status.success());
+    let body: serde_json::Value = serde_json::from_slice(&output.stdout).expect("json error");
+    assert_eq!(body["error"]["code"], "invalid_input");
+
+    // Path traversal key on update
+    for key in [r"..\..\..\..\widgets", "..", ".", "a/b"] {
+        let output = bb_command()
+            .args([
+                "commit",
+                "status",
+                "update",
+                "-R",
+                "acme/widgets",
+                "--commit",
+                "110daa97",
+                "--key",
+                key,
+                "--state",
+                "SUCCESSFUL",
+                "--url",
+                "https://ci.example.com/builds/42",
+                "--output",
+                "json",
+            ])
+            .env("BB_CONFIG_PATH", &config_path)
+            .output()
+            .expect("command should run");
+        assert!(!output.status.success(), "{key} should be rejected");
+        let body: serde_json::Value = serde_json::from_slice(&output.stdout).expect("json error");
+        assert_eq!(body["error"]["code"], "invalid_input", "{key}");
+    }
+
+    // Path traversal workspace or repo on status write
+    for (workspace, repo) in [
+        ("acme", "foo/../victim"),
+        ("acme", r"foo\..\victim"),
+        ("acme/../other", "widgets"),
+    ] {
+        let output = bb_command()
+            .args([
+                "commit",
+                "status",
+                "create",
+                "--workspace",
+                workspace,
+                "--repo",
+                repo,
+                "--commit",
+                "110daa97",
+                "--key",
+                "ci-build",
+                "--state",
+                "SUCCESSFUL",
+                "--url",
+                "https://ci.example.com/builds/42",
+                "--output",
+                "json",
+            ])
+            .env("BB_CONFIG_PATH", &config_path)
+            .output()
+            .expect("command should run");
+        assert!(
+            !output.status.success(),
+            "{workspace}/{repo} should be rejected"
+        );
+        let body: serde_json::Value = serde_json::from_slice(&output.stdout).expect("json error");
+        assert_eq!(body["error"]["code"], "invalid_input", "{workspace}/{repo}");
+    }
+
+    any.assert_hits(0);
 }

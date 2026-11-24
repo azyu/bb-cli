@@ -10,7 +10,7 @@
 
 ## Features
 
-- `gh`-style command groups for repositories, pull requests, pipelines, commit reports, and raw API calls
+- `gh`-style command groups for repositories, pull requests, pipelines, commit reports/statuses, and raw API calls
 - Automatic workspace and repository detection from your local Bitbucket `remote.origin.url`
 - Text and table output for interactive use, plus stable JSON output for scripts and agents
 - Shell completions for bash, zsh, fish, and PowerShell
@@ -95,8 +95,11 @@ bb pipeline list
 bb pipeline get --uuid "{pipeline-uuid}"
 bb pipeline get --build 123
 bb pipeline log --build 123 --step "{step-uuid}"
+bb pipeline stop 123
 bb commit report list --commit 110daa97
 bb commit report delete --commit 110daa97 --id mysystem-001
+bb commit status list --commit 110daa97
+bb commit status create --commit 110daa97 --key ci-build --state SUCCESSFUL --url https://ci.example.com/builds/123
 ```
 
 ### 4. Enable shell completion
@@ -114,8 +117,8 @@ bb completion zsh
 | `bb auth` | `login`, `status`, `list`, `switch`, `logout` |
 | `bb repo` | `list` |
 | `bb pr` | `list`, `get`, `create`, `update`, `merge`, `approve`, `unapprove`, `request-changes`, `remove-request-changes`, `decline`, `comment`, `comment-update`, `comments`, `diff`, `diffstat`, `statuses`, `activity` |
-| `bb pipeline` | `list`, `get`, `steps`, `log`, `run` |
-| `bb commit` | `report list`, `report get`, `report put`, `report delete` |
+| `bb pipeline` | `list`, `get`, `steps`, `log`, `run`, `stop` (`cancel`) |
+| `bb commit` | `report list\|get\|put\|delete`, `status list\|get\|create\|update` |
 | `bb api` | Direct Bitbucket Cloud API requests |
 | `bb completion` | `bash`, `zsh`, `fish`, `powershell` |
 | `bb version` | Build metadata |
@@ -124,7 +127,7 @@ bb completion zsh
 > [!NOTE]
 > - Commands targeting an existing PR accept the ID positionally or with `--id` (`bb pr comments 123` and `bb pr comments --id 123` are equivalent).
 > - In `bb pr comments` and `bb pr comment-update`, pass `--comment-id` to select a comment. `--id` always refers to the pull request.
-> - Pipeline read commands accept either `--uuid` or `--build`.
+> - Pipeline commands targeting a run (`get`, `steps`, `log`, `stop`) accept a positional build number or `{uuid}`, or `--build`/`--uuid`.
 > - Combine `--output json` with `--json-fields` when scripts or agents only need a subset of fields.
 
 ## Configuration and Auth
@@ -171,8 +174,9 @@ Only add `write:*` scopes when you need commands that create, update, or delete 
 | `bb pr list/get/comments/diff/diffstat/statuses/activity` | `read:repository`, `read:pullrequest` |
 | `bb pr create/update/merge/approve/unapprove/request-changes/remove-request-changes/decline/comment/comment-update` | `read:repository`, `read:pullrequest`, `write:pullrequest` |
 | `bb pipeline list/get/steps/log` | `read:repository`, `read:pipeline` |
-| `bb pipeline run` | `read:repository`, `read:pipeline`, `write:pipeline` |
+| `bb pipeline run/stop` | `read:repository`, `read:pipeline`, `write:pipeline` |
 | `bb commit report list/get/put/delete` | `read:repository` |
+| `bb commit status list/get/create/update` | `read:repository` |
 | `bb api` | Varies by endpoint |
 | `bb completion`, `bb version`, `bb skill` | None |
 

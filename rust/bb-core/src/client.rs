@@ -180,6 +180,28 @@ impl Client {
             .map_err(|error| CliError::Internal(format!("decode response: {error}")))
     }
 
+    pub fn request_no_content(
+        &self,
+        method: Method,
+        path: &str,
+        query: &[(String, String)],
+    ) -> Result<(), CliError> {
+        let response = self.send_request(method, path, query, None)?;
+        let status = response.status();
+        if status != reqwest::StatusCode::NO_CONTENT {
+            let body = response.text().unwrap_or_default();
+            return Err(CliError::Api {
+                status: status.as_u16(),
+                body: if body.trim().is_empty() {
+                    format!("expected 204 No Content, got {}", status.as_u16())
+                } else {
+                    body
+                },
+            });
+        }
+        Ok(())
+    }
+
     pub fn request_json<T: DeserializeOwned>(
         &self,
         method: Method,
@@ -583,5 +605,35 @@ mod tests {
         );
         assert!(sink.is_empty());
         broken.assert();
+    }
+
+    #[test]
+    fn request_no_content_requires_204_and_rejects_redirect_to_200() {
+        let server = MockServer::start();
+        let ok_204 = server.mock(|when, then| {
+            when.method(httpmock::Method::POST).path("/stop");
+            then.status(204);
+        });
+        let login_page = server.mock(|when, then| {
+            when.method(GET).path("/login");
+            then.status(200).body("<html>login</html>");
+        });
+        let redirect = server.mock(|when, then| {
+            when.method(httpmock::Method::POST).path("/stop-redirect");
+            then.status(302)
+                .header("location", format!("{}/login", server.base_url()));
+        });
+        let client = api_client(&server);
+
+        client
+            .request_no_content(Method::POST, "/stop", &[])
+            .expect("204 should succeed");
+        let err = client
+            .request_no_content(Method::POST, "/stop-redirect", &[])
+            .expect_err("redirected 200 login page must fail");
+        assert_eq!(err.code(), "api_error");
+        ok_204.assert();
+        redirect.assert();
+        login_page.assert();
     }
 }

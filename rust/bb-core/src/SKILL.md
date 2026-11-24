@@ -1,6 +1,6 @@
 ---
 name: bitbucket-cli
-description: "Bitbucket Cloud: inspect and operate repos, pull requests, pipelines, commit reports (Code Insights), and raw REST endpoints through the local bb CLI."
+description: "Bitbucket Cloud: inspect and operate repos, pull requests, pipelines, commit reports/statuses, and raw REST endpoints through the local bb CLI."
 metadata:
   openclaw:
     category: "developer-tools"
@@ -22,7 +22,7 @@ bb version
 
 - Prefer `--output json` for automation.
 - Use `--json-fields` only on commands that explicitly support it.
-- Outside a cloned Bitbucket repo, pass `-R <workspace>/<repo>` or explicit `--workspace` and `--repo`; `-R` conflicts with the two explicit flags. `-R` is accepted only by the repository-scoped groups (`pr`, `pipeline`, `commit report`) — `repo list` takes `--workspace` alone, and `api`/`auth` reject it.
+- Outside a cloned Bitbucket repo, pass `-R <workspace>/<repo>` or explicit `--workspace` and `--repo`; `-R` conflicts with the two explicit flags. `-R` is accepted only by the repository-scoped groups (`pr`, `pipeline`, `commit`) — `repo list` takes `--workspace` alone, and `api`/`auth` reject it.
 - Before any write operation, inspect the exact subcommand help in the current session and use only documented flags.
 - Existing-PR commands accept positional `ID` or `--id`; passing both is an error.
 - For `bb pr comments`, `ID`/`--id` always mean the pull request ID. Use `--comment-id` to target a single comment; never pass a comment ID via `--id`.
@@ -33,12 +33,13 @@ bb version
 - `bb api` request bodies are JSON-only (`--input <file>` or `--input -`). Responses follow the server's content type: JSON responses print as pretty-printed JSON, anything else (pipeline step logs, diffs, binaries) prints the raw body verbatim — redirect large or binary output to a file. Pagination still requires JSON pages. Prefer the wrapped commands (`bb pipeline log`, `bb pr diff`) when you need their selector flags.
 - `bb api` has no `--output` flag. Passing one is a clap argument error on stderr; if you redirect stderr away you will see an empty result and misread it as empty data. Do not suppress stderr when probing flags.
 - Do not combine `bb api --input` with `--paginate`; paginated mode is read-only.
-- `bb pipeline get`/`steps`/`log` select a pipeline via a positional selector (`bb pipeline get 14588`, `bb pipeline log 14588 --step "{uuid}"`) — numeric means build number, brace-wrapped means UUID — or via the `--build <number>`/`--uuid "{uuid}"` flags; passing the positional together with either flag is an error. Braces are optional for `--step`/`--uuid`, but required on a positional selector — that is what distinguishes a UUID from a build number.
+- `bb pipeline get`/`steps`/`log`/`stop` (alias `cancel`) select a pipeline via a positional selector (`bb pipeline get 14588`, `bb pipeline stop 14588`, `bb pipeline log 14588 --step "{uuid}"`) — numeric means build number, brace-wrapped means UUID — or via the `--build <number>`/`--uuid "{uuid}"` flags; passing the positional together with either flag is an error. Braces are optional for `--step`/`--uuid`, but required on a positional selector — that is what distinguishes a UUID from a build number.
 - `bb pipeline list` returns the newest pipelines first by default (`sort=-created_on`) and only the first API page (typically 10 pipelines) unless `--all`. Use `--all` when the complete history is required; an explicit `--sort` overrides the default.
 - Raw `bb api repositories/<workspace>/<repo>/pipelines` calls do not inherit that default. Pass `--sort=-created_on` there when inspecting recent pipelines, and `--paginate` when the full history is required.
 - `bb pipeline list` filters by branch with `--branch <name>` (sent as the `target.branch` query parameter); the pipelines endpoint ignores `q`.
 - Use `bb pr comment --parent <comment-id>` for PR comment replies.
-- `bb commit report` requires `--commit <sha>` (hex only; local `HEAD` is never assumed). `--id` accepts only ASCII letters, digits, `-` `_` `.` `~` `{` `}`; for any other report id use `bb api`.
+- `bb commit report` and `bb commit status` require `--commit <sha>` (hex only; local `HEAD` is never assumed). Path-segment identifiers (`--id` on reports, `--key` on status `get`/`update`) accept only ASCII letters, digits, `-` `_` `.` `~` `{` `}`; for any other value use `bb api`.
+- `bb commit status create` and `update` (alias `edit`) accept either structured flags (`create`: `--key`, `--state`, `--url`, optional `--name`/`--description`/`--refname`; `update`: `--key` plus at least one update field) or a JSON object via `--input <file|->` (mutually exclusive with field flags; `--key` is still required on `update` as the URL path key). `--state` accepts `INPROGRESS`, `SUCCESSFUL`, `FAILED`, or `STOPPED`.
 - There is no `bb issue` or `bb wiki`: Bitbucket Cloud removed native Issues and Wikis on 2026-08-20, and `bb api .../issues` returns `410 Gone`.
 - Runtime failures in JSON mode return JSON error envelopes; parse/help failures stay text.
 
@@ -64,11 +65,12 @@ bb version
 
 ### pipeline
 
-- `list`, `get`, `run`, `steps`, `log`
+- `list`, `get`, `run`, `stop` (alias: `cancel`), `steps`, `log`
 
 ### commit
 
 - `report list`, `report get`, `report put`, `report delete` - Code Insights reports on a commit.
+- `status list`, `status get` (alias: `view`), `status create`, `status update` (alias: `edit`) - Build statuses on a commit.
 
 ### api
 
@@ -105,7 +107,9 @@ bb pr comment --help
 bb pr get --help
 bb pr comments --help
 bb pipeline log --help
+bb pipeline stop --help
 bb commit report put --help
+bb commit status create --help
 ```
 
 ## Common Calls
@@ -125,12 +129,17 @@ bb pipeline list --workspace acme --repo widgets --output json
 bb pipeline get "{pipeline-uuid}" --workspace acme --repo widgets --output json
 bb pipeline log "{pipeline-uuid}" --workspace acme --repo widgets --step "{step-uuid}"
 bb commit report list --workspace acme --repo widgets --commit 110daa97 --output json
+bb commit status list --workspace acme --repo widgets --commit 110daa97 --output json
+bb commit status get --workspace acme --repo widgets --commit 110daa97 --key ci-build --output json
 
 # Write operations
 bb pr create --workspace acme --repo widgets --title "Add widget support" --source feature/widgets --destination main
 bb pr comment 123 --workspace acme --repo widgets --content "Reply text" --parent 456
 bb pr create --workspace acme --repo widgets --title "Add widget support" --source feature/widgets --destination main --description "$(cat ./pr-body.md)"
+bb pipeline stop 14588 --workspace acme --repo widgets --output json
 bb commit report put --workspace acme --repo widgets --commit 110daa97 --id mysystem-001 --input ./report.json
+bb commit status create --workspace acme --repo widgets --commit 110daa97 --key ci-build --state SUCCESSFUL --url https://ci.example.com/builds/123
+bb commit status update --workspace acme --repo widgets --commit 110daa97 --key ci-build --state FAILED --url https://ci.example.com/builds/123
 
 # Escape hatch
 bb api repositories/acme/widgets/pullrequests --paginate
@@ -158,6 +167,6 @@ tail -100 step.log
 
 ## GitHub CLI Compatibility
 
-Subcommand aliases accepted: `view`→`get`, `edit`→`update`, `close`→`decline`, `checks`→`statuses`.
+Subcommand aliases accepted: `view`→`get`, `edit`→`update`, `close`→`decline`, `checks`→`statuses`, `cancel`→`stop`.
 
 Flag names differ — `bb pr create` uses `--destination` (not `--base`/`--dest`); `--body` is accepted as an alias for `--description`. When unsure, run `<command> --help`.

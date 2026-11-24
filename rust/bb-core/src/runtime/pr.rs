@@ -15,8 +15,9 @@ use crate::{
 };
 
 use super::support::{
-    client_from_profile, collect_query, optional_trimmed, parse_json_fields, parse_list_output,
-    parse_write_output, print_json_list, print_json_object, required_string, set_optional_string,
+    STATUS_JSON_FIELDS, client_from_profile, collect_query, optional_trimmed, parse_json_fields,
+    parse_list_output, parse_write_output, print_json_list, print_json_object, required_string,
+    set_optional_string,
 };
 
 const PR_JSON_FIELDS: &[&str] = &[
@@ -60,19 +61,6 @@ const PR_DIFFSTAT_JSON_FIELDS: &[&str] = &[
     "old",
     "status",
     "type",
-];
-const PR_STATUSES_JSON_FIELDS: &[&str] = &[
-    "created_on",
-    "description",
-    "key",
-    "links",
-    "name",
-    "refname",
-    "state",
-    "type",
-    "updated_on",
-    "url",
-    "uuid",
 ];
 
 const PR_ACTIVITY_JSON_FIELDS: &[&str] = &[
@@ -738,7 +726,7 @@ fn handle_pr_statuses<O: Write>(
         request.json_fields.as_deref(),
         output == ListOutput::Json,
         "bb pr statuses",
-        PR_STATUSES_JSON_FIELDS,
+        STATUS_JSON_FIELDS,
     )?;
     let (workspace, repo) =
         context::resolve_repo_target(request.workspace.as_deref(), request.repo.as_deref(), true)?;

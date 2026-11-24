@@ -8,9 +8,14 @@ pub(super) struct RepositoryTarget {
 
 pub(super) fn parse_repository_target(value: &str) -> Result<RepositoryTarget, String> {
     let mut parts = value.split('/');
-    let workspace = parts.next().unwrap_or_default();
-    let repo = parts.next().unwrap_or_default();
-    if workspace.is_empty() || repo.is_empty() || parts.next().is_some() {
+    let workspace = parts.next().unwrap_or_default().trim();
+    let repo = parts.next().unwrap_or_default().trim();
+    if workspace.is_empty()
+        || repo.is_empty()
+        || parts.next().is_some()
+        || workspace.chars().any(char::is_whitespace)
+        || repo.chars().any(char::is_whitespace)
+    {
         return Err("must use WORKSPACE/REPO with exactly one slash".to_string());
     }
     Ok(RepositoryTarget {
@@ -95,10 +100,18 @@ pub(super) fn apply_repository_target(
             PipelineRequest::Run(request) => {
                 set_repository_target(&mut request.workspace, &mut request.repo, target)
             }
+            PipelineRequest::Stop(request) => {
+                set_repository_target(&mut request.workspace, &mut request.repo, target)
+            }
         },
         Request::Commit(request) => match request {
-            CommitRequest::Help | CommitRequest::ReportHelp => unsupported_repository_target(),
+            CommitRequest::Help | CommitRequest::ReportHelp | CommitRequest::StatusHelp => {
+                unsupported_repository_target()
+            }
             CommitRequest::Report(request) => {
+                set_repository_target(&mut request.workspace, &mut request.repo, target)
+            }
+            CommitRequest::Status(request) => {
                 set_repository_target(&mut request.workspace, &mut request.repo, target)
             }
         },

@@ -73,7 +73,7 @@
 - Reuse raw API objects for JSON output instead of re-parsing formatted text.
 - Preserve `q`, `sort`, and `fields` passthrough where the Bitbucket API supports them.
 - `bb pipeline list` defaults to `sort=-created_on` so its bounded first page contains the most recent pipelines; an explicit `--sort` value overrides the default.
-- Prefer Bitbucket API-aligned naming (`get`, `update`, `request-changes`, `remove-request-changes`). GitHub CLI aliases accepted: `view`→`get`, `edit`→`update`, `close`→`decline`, `checks`→`statuses`.
+- Prefer Bitbucket API-aligned naming (`get`, `update`, `request-changes`, `remove-request-changes`, `stop`). GitHub CLI aliases accepted: `view`→`get`, `edit`→`update`, `close`→`decline`, `checks`→`statuses`, `cancel`→`stop`.
 - GitHub CLI `--body` is accepted as a visible alias for PR `--description` and comment `--content`.
 
 - The agent skill printed by `bb skill` is `rust/bb-core/src/SKILL.md`, embedded with `include_str!`. `bb-cli` tests parse every `bb ...` example in its code blocks with the clap definitions and require every top-level group to have a `### <group>` section naming each of its visible direct subcommands (nested ones such as `commit report list` are not checked), so command-surface changes must update the skill in the same change.

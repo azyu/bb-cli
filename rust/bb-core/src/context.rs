@@ -9,8 +9,30 @@ pub fn resolve_repo_target(
     repo_value: Option<&str>,
     require_repo: bool,
 ) -> Result<(String, String), CliError> {
-    let mut workspace = workspace_value.unwrap_or_default().trim().to_string();
-    let mut repo = repo_value.unwrap_or_default().trim().to_string();
+    let mut workspace = match workspace_value {
+        Some(value) => {
+            let trimmed = value.trim();
+            if trimmed.is_empty() {
+                return Err(CliError::InvalidInput(
+                    "--workspace must not be empty".to_string(),
+                ));
+            }
+            trimmed.to_string()
+        }
+        None => String::new(),
+    };
+    let mut repo = match repo_value {
+        Some(value) => {
+            let trimmed = value.trim();
+            if trimmed.is_empty() {
+                return Err(CliError::InvalidInput(
+                    "--repo must not be empty".to_string(),
+                ));
+            }
+            trimmed.to_string()
+        }
+        None => String::new(),
+    };
 
     if workspace.is_empty() || (require_repo && repo.is_empty()) {
         if let Ok((inferred_workspace, inferred_repo)) = infer_bitbucket_repo_from_git(None) {
@@ -28,11 +50,28 @@ pub fn resolve_repo_target(
             "--workspace is required".to_string(),
         ));
     }
+    validate_target_segment("--workspace", &workspace)?;
     if require_repo && repo.is_empty() {
         return Err(CliError::InvalidInput("--repo is required".to_string()));
     }
+    if !repo.is_empty() {
+        validate_target_segment("--repo", &repo)?;
+    }
 
     Ok((workspace, repo))
+}
+
+/// Workspace and repository slugs/UUIDs are interpolated into URL paths, where reqwest::Url
+/// treats '\' as '/' and resolves dot segments. Allow only characters that cannot alter the path.
+fn validate_target_segment(flag_name: &str, value: &str) -> Result<(), CliError> {
+    let allowed =
+        |ch: char| ch.is_ascii_alphanumeric() || matches!(ch, '-' | '_' | '.' | '~' | '{' | '}');
+    if !value.chars().all(allowed) || value == "." || value == ".." {
+        return Err(CliError::InvalidInput(format!(
+            "{flag_name} may only contain ASCII letters, digits, '-', '_', '.', '~', '{{', '}}' and must not be '.' or '..': {value}"
+        )));
+    }
+    Ok(())
 }
 
 pub fn infer_bitbucket_repo_from_git(dir: Option<&Path>) -> Result<(String, String), CliError> {
@@ -127,5 +166,39 @@ mod tests {
             parse_bitbucket_remote("https://github.com/acme/app.git"),
             None
         );
+    }
+
+    #[test]
+    fn resolve_repo_target_rejects_path_traversal_segments() {
+        assert_eq!(
+            resolve_repo_target(Some("acme"), Some("my.widgets_1"), true).unwrap(),
+            ("acme".to_string(), "my.widgets_1".to_string())
+        );
+        assert_eq!(
+            resolve_repo_target(Some("{ws-uuid}"), Some("{repo-uuid}"), true).unwrap(),
+            ("{ws-uuid}".to_string(), "{repo-uuid}".to_string())
+        );
+
+        for bad in [
+            "",
+            "   ",
+            "foo/../victim",
+            r"foo\..\victim",
+            "..",
+            ".",
+            "a?b",
+            "a#b",
+            "a%2Fb",
+            "a b",
+        ] {
+            assert!(
+                resolve_repo_target(Some("acme"), Some(bad), true).is_err(),
+                "repo {bad} should be rejected"
+            );
+            assert!(
+                resolve_repo_target(Some(bad), Some("widgets"), true).is_err(),
+                "workspace {bad} should be rejected"
+            );
+        }
     }
 }

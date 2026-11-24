@@ -152,7 +152,13 @@ fn wants_json_errors(request: &Request) -> bool {
         Request::Pipeline(PipelineRequest::Run(req)) => {
             req.output.trim().eq_ignore_ascii_case("json")
         }
+        Request::Pipeline(PipelineRequest::Stop(req)) => {
+            req.output.trim().eq_ignore_ascii_case("json")
+        }
         Request::Commit(CommitRequest::Report(req)) => {
+            req.output.trim().eq_ignore_ascii_case("json")
+        }
+        Request::Commit(CommitRequest::Status(req)) => {
             req.output.trim().eq_ignore_ascii_case("json")
         }
         _ => false,

@@ -9,7 +9,7 @@ use crate::error::CliError;
 use crate::render;
 use crate::{
     ListOutput, PipelineGetRequest, PipelineListRequest, PipelineLogRequest, PipelineRequest,
-    PipelineRunRequest, PipelineStepsRequest, WriteOutput,
+    PipelineRunRequest, PipelineStepsRequest, PipelineStopRequest, WriteOutput,
 };
 
 use super::support::{
@@ -64,6 +64,7 @@ pub(super) fn handle_pipeline<O: Write>(
         PipelineRequest::Steps(request) => handle_pipeline_steps(request, stdout),
         PipelineRequest::Log(request) => handle_pipeline_log(request, stdout),
         PipelineRequest::Run(request) => handle_pipeline_run(request, stdout),
+        PipelineRequest::Stop(request) => handle_pipeline_stop(request, stdout),
     }
 }
 
@@ -243,6 +244,44 @@ fn handle_pipeline_run<O: Write>(
     }
 }
 
+fn handle_pipeline_stop<O: Write>(
+    request: &PipelineStopRequest,
+    stdout: &mut O,
+) -> Result<(), CliError> {
+    let output = parse_write_output(&request.output)?;
+    let selector = validate_pipeline_selector(
+        request.uuid.as_deref(),
+        request.build.as_deref(),
+        request.positional_selector.as_deref(),
+    )?;
+    let (workspace, repo) =
+        context::resolve_repo_target(request.workspace.as_deref(), request.repo.as_deref(), true)?;
+    let client = client_from_profile(request.profile.as_deref())?;
+    let (pipeline_display_uuid, pipeline_uuid) =
+        resolve_pipeline_selector(&client, &workspace, &repo, &selector)?;
+    client.request_no_content(
+        Method::POST,
+        &format!("/repositories/{workspace}/{repo}/pipelines/{pipeline_uuid}/stopPipeline"),
+        &[],
+    )?;
+
+    match output {
+        WriteOutput::Text => writeln!(
+            stdout,
+            "Requested stop for pipeline {pipeline_display_uuid}"
+        )
+        .map_err(CliError::from),
+        WriteOutput::Json => render::print_json(
+            stdout,
+            &json!({
+                "uuid": pipeline_display_uuid,
+                "action": "stop_requested",
+                "ok": true,
+            }),
+        ),
+    }
+}
+
 fn write_pipeline_summary<O: Write>(
     stdout: &mut O,
     heading: &str,
@@ -285,7 +324,7 @@ fn normalize_uuid_arg(flag_name: &str, value: Option<&str>) -> Result<(String, S
     if has_encoded_open && has_encoded_close && trimmed.len() > 6 {
         let inner = &trimmed[3..trimmed.len() - 3];
         validate_uuid_arg(flag_name, inner)?;
-        return Ok((format!("{{{inner}}}"), trimmed.to_string()));
+        return Ok((format!("{{{inner}}}"), format!("%7B{inner}%7D")));
     }
 
     let has_open_brace = trimmed.starts_with('{');
@@ -397,12 +436,13 @@ fn resolve_pipeline_build_lookup(
     normalize_uuid_arg("--build", Some(uuid))
 }
 
+/// The UUID is interpolated into the URL path; allowlist characters so backslashes, dot
+/// segments, or internal whitespace cannot alter the path.
 fn validate_uuid_arg(flag_name: &str, value: &str) -> Result<(), CliError> {
-    let value = value.trim();
     if value.is_empty()
-        || value
+        || !value
             .chars()
-            .any(|ch| ch.is_whitespace() || matches!(ch, '/' | '?' | '#' | '{' | '}'))
+            .all(|ch| ch.is_ascii_alphanumeric() || matches!(ch, '-' | '_'))
     {
         return Err(CliError::InvalidInput(format!(
             "{flag_name} must be a Bitbucket UUID"
@@ -487,5 +527,27 @@ mod tests {
             error.message(),
             "pipeline identifier is required: pass a build number or {uuid} positionally, or --uuid/--build"
         );
+    }
+
+    #[test]
+    fn validate_uuid_arg_rejects_path_traversal_characters() {
+        assert!(validate_uuid_arg("--uuid", "pipe-123").is_ok());
+        for bad in [
+            r"..\..\widgets",
+            "..",
+            ".",
+            "a/b",
+            "a?b",
+            "a#b",
+            "a%2Fb",
+            " pipe-123 ",
+        ] {
+            assert!(
+                validate_uuid_arg("--uuid", bad).is_err(),
+                "{bad} should be rejected"
+            );
+        }
+        assert!(normalize_uuid_arg("--uuid", Some("%7B pipe-123 %7D")).is_err());
+        assert!(normalize_uuid_arg("--uuid", Some("{ pipe-123 }")).is_err());
     }
 }
