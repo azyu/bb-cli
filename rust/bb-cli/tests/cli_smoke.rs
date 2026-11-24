@@ -3406,5 +3406,42 @@ fn commit_status_rejects_invalid_state_and_path_traversal_key_before_any_request
         assert_eq!(body["error"]["code"], "invalid_input", "{key}");
     }
 
+    // Path traversal workspace or repo on status write
+    for (workspace, repo) in [
+        ("acme", "foo/../victim"),
+        ("acme", r"foo\..\victim"),
+        ("acme/../other", "widgets"),
+    ] {
+        let output = bb_command()
+            .args([
+                "commit",
+                "status",
+                "create",
+                "--workspace",
+                workspace,
+                "--repo",
+                repo,
+                "--commit",
+                "110daa97",
+                "--key",
+                "ci-build",
+                "--state",
+                "SUCCESSFUL",
+                "--url",
+                "https://ci.example.com/builds/42",
+                "--output",
+                "json",
+            ])
+            .env("BB_CONFIG_PATH", &config_path)
+            .output()
+            .expect("command should run");
+        assert!(
+            !output.status.success(),
+            "{workspace}/{repo} should be rejected"
+        );
+        let body: serde_json::Value = serde_json::from_slice(&output.stdout).expect("json error");
+        assert_eq!(body["error"]["code"], "invalid_input", "{workspace}/{repo}");
+    }
+
     any.assert_hits(0);
 }
