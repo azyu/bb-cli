@@ -95,10 +95,18 @@ pub(super) fn apply_repository_target(
             PipelineRequest::Run(request) => {
                 set_repository_target(&mut request.workspace, &mut request.repo, target)
             }
+            PipelineRequest::Stop(request) => {
+                set_repository_target(&mut request.workspace, &mut request.repo, target)
+            }
         },
         Request::Commit(request) => match request {
-            CommitRequest::Help | CommitRequest::ReportHelp => unsupported_repository_target(),
+            CommitRequest::Help | CommitRequest::ReportHelp | CommitRequest::StatusHelp => {
+                unsupported_repository_target()
+            }
             CommitRequest::Report(request) => {
+                set_repository_target(&mut request.workspace, &mut request.repo, target)
+            }
+            CommitRequest::Status(request) => {
                 set_repository_target(&mut request.workspace, &mut request.repo, target)
             }
         },

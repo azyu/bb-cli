@@ -358,6 +358,17 @@ pub struct PipelineRunRequest {
 }
 
 #[derive(Debug, Clone)]
+pub struct PipelineStopRequest {
+    pub workspace: Option<String>,
+    pub repo: Option<String>,
+    pub uuid: Option<String>,
+    pub build: Option<String>,
+    pub positional_selector: Option<String>,
+    pub profile: Option<String>,
+    pub output: String,
+}
+
+#[derive(Debug, Clone)]
 pub enum AuthRequest {
     Help,
     Login(AuthLoginRequest),
@@ -403,6 +414,7 @@ pub enum PipelineRequest {
     Steps(PipelineStepsRequest),
     Log(PipelineLogRequest),
     Run(PipelineRunRequest),
+    Stop(PipelineStopRequest),
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -428,11 +440,44 @@ pub struct CommitReportRequest {
     pub profile: Option<String>,
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum CommitStatusAction {
+    List,
+    Get,
+    Create,
+    Update,
+}
+
+/// One request shape for all commit status actions; clap restricts which flags each action accepts.
+#[derive(Debug, Clone)]
+pub struct CommitStatusRequest {
+    pub action: CommitStatusAction,
+    pub workspace: Option<String>,
+    pub repo: Option<String>,
+    pub commit: Option<String>,
+    pub key: Option<String>,
+    pub state: Option<String>,
+    pub url: Option<String>,
+    pub name: Option<String>,
+    pub description: Option<String>,
+    pub refname: Option<String>,
+    pub input: Option<String>,
+    pub output: String,
+    pub all: bool,
+    pub q: Option<String>,
+    pub sort: Option<String>,
+    pub fields: Option<String>,
+    pub json_fields: Option<String>,
+    pub profile: Option<String>,
+}
+
 #[derive(Debug, Clone)]
 pub enum CommitRequest {
     Help,
     ReportHelp,
     Report(CommitReportRequest),
+    StatusHelp,
+    Status(CommitStatusRequest),
 }
 
 #[derive(Debug, Clone)]

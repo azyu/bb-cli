@@ -10,7 +10,7 @@
 
 ## 특징
 
-- 저장소, PR, 파이프라인, 커밋 리포트, raw API 호출을 `gh` 스타일 명령 그룹으로 묶어 제공
+- 저장소, PR, 파이프라인, 커밋 리포트·상태, raw API 호출을 `gh` 스타일 명령 그룹으로 묶어 제공
 - 로컬 Bitbucket 저장소의 `remote.origin.url`에서 워크스페이스와 저장소 자동 추론
 - 터미널에서 읽기 편한 텍스트·테이블 출력과 자동화·에이전트용 JSON 출력 지원
 - bash, zsh, fish, PowerShell 자동완성 스크립트 생성
@@ -95,8 +95,11 @@ bb pipeline list
 bb pipeline get --uuid "{pipeline-uuid}"
 bb pipeline get --build 123
 bb pipeline log --build 123 --step "{step-uuid}"
+bb pipeline stop 123
 bb commit report list --commit 110daa97
 bb commit report delete --commit 110daa97 --id mysystem-001
+bb commit status list --commit 110daa97
+bb commit status create --commit 110daa97 --key ci-build --state SUCCESSFUL --url https://ci.example.com/builds/123
 ```
 
 ### 4. 셸 자동완성 활성화
@@ -114,8 +117,8 @@ bb completion zsh
 | `bb auth` | `login`, `status`, `list`, `switch`, `logout` |
 | `bb repo` | `list` |
 | `bb pr` | `list`, `get`, `create`, `update`, `merge`, `approve`, `unapprove`, `request-changes`, `remove-request-changes`, `decline`, `comment`, `comment-update`, `comments`, `diff`, `diffstat`, `statuses`, `activity` |
-| `bb pipeline` | `list`, `get`, `steps`, `log`, `run` |
-| `bb commit` | `report list`, `report get`, `report put`, `report delete` |
+| `bb pipeline` | `list`, `get`, `steps`, `log`, `run`, `stop` (`cancel`) |
+| `bb commit` | `report list\|get\|put\|delete`, `status list\|get\|create\|update` |
 | `bb api` | Bitbucket Cloud raw API 엔드포인트 직접 호출 |
 | `bb completion` | `bash`, `zsh`, `fish`, `powershell` |
 | `bb version` | 빌드 정보 출력 |
@@ -124,7 +127,7 @@ bb completion zsh
 > [!NOTE]
 > - 기존 PR을 대상으로 하는 명령은 PR ID를 위치 인자(`<id>`)나 `--id`로 넘길 수 있습니다. `bb pr comments 123`과 `bb pr comments --id 123`은 같게 동작합니다.
 > - `bb pr comments`와 `bb pr comment-update`에서 특정 댓글을 고를 때는 `--comment-id`를 쓰세요. `--id`는 항상 PR ID입니다.
-> - 파이프라인 조회 명령은 `--uuid`나 `--build`로 대상을 지정합니다.
+> - 특정 파이프라인을 대상으로 하는 명령(`get`, `steps`, `log`, `stop`)은 위치 인자(빌드 번호 또는 `{uuid}`)나 `--build`/`--uuid`로 대상을 지정합니다.
 > - 스크립트나 에이전트가 응답의 일부 필드만 필요하다면 `--output json`과 `--json-fields`를 함께 쓰세요.
 
 ## 설정과 인증
@@ -171,8 +174,10 @@ bb completion zsh
 | `bb pr list/get/comments/diff/diffstat/statuses/activity` | `read:repository`, `read:pullrequest` |
 | `bb pr create/update/merge/approve/unapprove/request-changes/remove-request-changes/decline/comment/comment-update` | `read:repository`, `read:pullrequest`, `write:pullrequest` |
 | `bb pipeline list/get/steps/log` | `read:repository`, `read:pipeline` |
-| `bb pipeline run` | `read:repository`, `read:pipeline`, `write:pipeline` |
+| `bb pipeline run/stop` | `read:repository`, `read:pipeline`, `write:pipeline` |
 | `bb commit report list/get/put/delete` | `read:repository` |
+| `bb commit status list/get` | `read:repository` |
+| `bb commit status create/update` | `read:repository`, `write:repository` |
 | `bb api` | 호출하는 엔드포인트에 따라 다름 |
 | `bb completion`, `bb version`, `bb skill` | 필요 없음 |
 

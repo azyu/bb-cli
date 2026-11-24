@@ -8,6 +8,20 @@ use crate::error::CliError;
 use crate::render;
 use crate::{ListOutput, WriteOutput};
 
+pub(super) const STATUS_JSON_FIELDS: &[&str] = &[
+    "created_on",
+    "description",
+    "key",
+    "links",
+    "name",
+    "refname",
+    "state",
+    "type",
+    "updated_on",
+    "url",
+    "uuid",
+];
+
 pub(super) fn client_from_profile(profile_name: Option<&str>) -> Result<Client, CliError> {
     let profile = profile_from_config(profile_name)?;
     Client::from_profile(&profile)

@@ -1,6 +1,6 @@
 use bb_core::{
-    AuthRequest, PipelineRequest, PrDeclineRequest, PrRequest, PrRequestChangesRequest,
-    PrStatusesRequest, PrUpdateRequest, Request,
+    AuthRequest, CommitRequest, CommitStatusAction, PipelineRequest, PrDeclineRequest, PrRequest,
+    PrRequestChangesRequest, PrStatusesRequest, PrUpdateRequest, Request,
 };
 
 use super::*;
@@ -455,6 +455,115 @@ fn pipeline_get_rejects_uuid_and_build_together() {
     let error = parse_from(["bb", "pipeline", "get", "--uuid", "{1234}", "--build", "17"])
         .expect_err("parse should fail");
     assert_eq!(error.kind(), clap::error::ErrorKind::ArgumentConflict);
+}
+
+#[test]
+fn pipeline_stop_and_cancel_alias_map_selector_and_repo() {
+    for subcommand in ["stop", "cancel"] {
+        let request = parse_from([
+            "bb",
+            "pipeline",
+            subcommand,
+            "14588",
+            "-R",
+            "acme/widgets",
+            "--output",
+            "json",
+        ])
+        .expect("parse should succeed");
+        let Request::Pipeline(PipelineRequest::Stop(request)) = request else {
+            panic!("expected pipeline stop for {subcommand}");
+        };
+        assert_eq!(request.positional_selector.as_deref(), Some("14588"));
+        assert_eq!(request.workspace.as_deref(), Some("acme"));
+        assert_eq!(request.repo.as_deref(), Some("widgets"));
+        assert_eq!(request.output, "json");
+    }
+
+    let error = parse_from(["bb", "pipeline", "stop", "14588", "--build", "14588"])
+        .expect_err("positional + --build must conflict");
+    assert_eq!(error.kind(), clap::error::ErrorKind::ArgumentConflict);
+}
+
+#[test]
+fn commit_status_subcommands_and_gh_aliases_parse() {
+    let request = parse_from([
+        "bb",
+        "commit",
+        "status",
+        "view",
+        "-R",
+        "acme/widgets",
+        "--commit",
+        "110daa97",
+        "--key",
+        "ci-build",
+        "--output",
+        "json",
+        "--json-fields",
+        "key,state",
+    ])
+    .expect("commit status view alias should parse");
+    let Request::Commit(CommitRequest::Status(request)) = request else {
+        panic!("expected commit status");
+    };
+    assert_eq!(request.action, CommitStatusAction::Get);
+    assert_eq!(request.workspace.as_deref(), Some("acme"));
+    assert_eq!(request.repo.as_deref(), Some("widgets"));
+    assert_eq!(request.commit.as_deref(), Some("110daa97"));
+    assert_eq!(request.key.as_deref(), Some("ci-build"));
+    assert_eq!(request.json_fields.as_deref(), Some("key,state"));
+
+    let request = parse_from([
+        "bb",
+        "commit",
+        "status",
+        "edit",
+        "-R",
+        "acme/widgets",
+        "--commit",
+        "110daa97",
+        "--key",
+        "ci-build",
+        "--state",
+        "FAILED",
+        "--url",
+        "https://ci.example.com/123",
+    ])
+    .expect("commit status edit alias should parse");
+    let Request::Commit(CommitRequest::Status(request)) = request else {
+        panic!("expected commit status");
+    };
+    assert_eq!(request.action, CommitStatusAction::Update);
+    assert_eq!(request.state.as_deref(), Some("FAILED"));
+    assert_eq!(request.url.as_deref(), Some("https://ci.example.com/123"));
+
+    // --input conflicts with field flags on create and update, but update still requires --key.
+    let err = parse_from([
+        "bb", "commit", "status", "create", "--commit", "110daa97", "--key", "ci-build", "--input",
+        "-",
+    ])
+    .expect_err("create --input + --key must conflict");
+    assert_eq!(err.kind(), clap::error::ErrorKind::ArgumentConflict);
+
+    let ok = parse_from([
+        "bb", "commit", "status", "update", "--commit", "110daa97", "--key", "ci-build", "--input",
+        "-",
+    ])
+    .expect("update --key + --input should parse");
+    let Request::Commit(CommitRequest::Status(ok)) = ok else {
+        panic!("expected commit status");
+    };
+    assert_eq!(ok.action, CommitStatusAction::Update);
+    assert_eq!(ok.key.as_deref(), Some("ci-build"));
+    assert_eq!(ok.input.as_deref(), Some("-"));
+
+    let err = parse_from([
+        "bb", "commit", "status", "update", "--commit", "110daa97", "--key", "ci-build", "--state",
+        "FAILED", "--input", "-",
+    ])
+    .expect_err("update --input + --state must conflict");
+    assert_eq!(err.kind(), clap::error::ErrorKind::ArgumentConflict);
 }
 
 #[test]

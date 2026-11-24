@@ -559,9 +559,26 @@ Naming rule: prefer Bitbucket API-aligned names (`get`, `update`, `request-chang
   - Missing required flags -> non-zero exit
   - Unsupported output -> non-zero exit
 
+### `bb pipeline stop`
+- Alias: `bb pipeline cancel`
+- Purpose: Request stopping a pipeline selected by UUID or build number (`POST .../pipelines/{pipeline_uuid}/stopPipeline`, `204 No Content`).
+- Required flags:
+  - `--workspace`, `--repo` unless both can be inferred from local Bitbucket `remote.origin.url`
+  - exactly one of positional `<selector>` (build number or brace-wrapped UUID), `--uuid`, or `--build`
+- Optional flags:
+  - `--output` (`text` default, `json`)
+- Output:
+  - `text`: `Requested stop for pipeline {uuid}`
+  - `json`: synthetic object `{"uuid": "{...}", "action": "stop_requested", "ok": true}`
+- Failure behavior:
+  - Missing required flags -> non-zero exit
+  - Passing positional `<selector>` together with `--uuid` or `--build` -> non-zero exit
+  - Invalid positional `<selector>`, `--uuid`, or `--build` value -> non-zero exit before any API request
+  - Unsupported output -> non-zero exit
+
 ## `bb commit`
 
-Code Insights reports attached to a commit. `bb commit` and `bb commit report` without a subcommand print their usage.
+Code Insights reports and build statuses attached to a commit. `bb commit`, `bb commit report`, and `bb commit status` without a subcommand print their usage.
 
 Shared flags for every `bb commit report` subcommand:
 - `--workspace`, `--repo` unless both can be inferred from local Bitbucket `remote.origin.url` (or `-R WORKSPACE/REPO`)
@@ -617,6 +634,74 @@ Shared flags for every `bb commit report` subcommand:
 - Failure behavior:
   - Missing `--commit` or `--id`, or an invalid value -> non-zero exit
   - API error -> non-zero exit with status/body summary
+
+Shared flags for every `bb commit status` subcommand:
+- `--workspace`, `--repo` unless both can be inferred from local Bitbucket `remote.origin.url` (or `-R WORKSPACE/REPO`)
+- `--commit <SHA>` (required): hexadecimal commit hash. Local `HEAD` is never used as a default.
+- `--key <KEY>` (required on `get`/`update`, and required on `create` unless `--input` is given): on `get` and `update`, `--key` becomes a URL path segment, so the same safe-character allowlist as `bb commit report --id` applies (ASCII letters, digits, `-`, `_`, `.`, `~`, `{`, `}`, rejecting `.` and `..`). Keys outside this set need `bb api`.
+- All local inputs are validated before config is read or any request is sent.
+
+### `bb commit status list`
+- Purpose: List commit statuses for a commit (`GET .../commit/{commit}/statuses`).
+- Optional flags:
+  - `--output` (`table` default, `json`)
+  - `--all` (follow pagination)
+  - `--q`, `--sort`, `--fields`
+  - `--json-fields` (requires `--output json`)
+- Output:
+  - `table`: `KEY`, `STATE`, `NAME`, `UPDATED AT`
+  - `json`: array of status objects
+- Failure behavior:
+  - Missing or non-hex `--commit` -> non-zero exit
+  - Unsupported output -> non-zero exit
+
+### `bb commit status get`
+- Alias: `bb commit status view`
+- Purpose: Get a single build status by key (`GET .../commit/{commit}/statuses/build/{key}`).
+- Required flags:
+  - `--commit <SHA>`
+  - `--key <KEY>`
+- Optional flags:
+  - `--fields`
+  - `--output` (`text` default, `json`)
+  - `--json-fields` (requires `--output json`)
+- Output:
+  - `text`: `Status <key> (<state>)[: <name>]` then `URL`, `Description`, and `Ref` when present
+  - `json`: build status object
+- Failure behavior:
+  - Missing or invalid `--commit` or `--key` -> non-zero exit before any request
+  - Status not found -> non-zero exit with the API 404 summary
+
+### `bb commit status create`
+- Purpose: Create (or overwrite) a build status on a commit (`POST .../commit/{commit}/statuses/build`).
+- Required inputs (either structured flags or `--input`, mutually exclusive):
+  - Flag mode: `--key <KEY>`, `--state <INPROGRESS|SUCCESSFUL|FAILED|STOPPED>`, `--url <URL>` (optional: `--name`, `--description`, `--refname`)
+  - JSON mode: `--input <path>` (`-` reads the JSON body from stdin)
+- Optional flags:
+  - `--output` (`text` default, `json`)
+- Output:
+  - `text`: `Created status <key> (<state>)[: <name>]` then `URL`, `Description`, and `Ref` when present
+  - `json`: created build status object
+- Failure behavior:
+  - Combining `--input` with any field flag (`--key`, `--state`, `--url`, `--name`, `--description`, `--refname`) -> non-zero exit before any request
+  - Missing required flags, invalid `--state`, or invalid JSON body -> non-zero exit before any request
+
+### `bb commit status update`
+- Alias: `bb commit status edit`
+- Purpose: Update an existing build status by key (`PUT .../commit/{commit}/statuses/build/{key}`).
+- Required flags:
+  - `--commit <SHA>`
+  - `--key <KEY>` (URL path segment; always required)
+  - Flag mode: `--state <INPROGRESS|SUCCESSFUL|FAILED|STOPPED>`, `--url <URL>` (optional: `--name`, `--description`, `--refname`)
+  - JSON mode: `--input <path>` (`-` reads the JSON body from stdin; conflicts with field flags other than `--key`)
+- Optional flags:
+  - `--output` (`text` default, `json`)
+- Output:
+  - `text`: `Updated status <key> (<state>)[: <name>]` then `URL`, `Description`, and `Ref` when present
+  - `json`: updated build status object
+- Failure behavior:
+  - Combining `--input` with any body field flag (`--state`, `--url`, `--name`, `--description`, `--refname`) -> non-zero exit before any request
+  - Missing or invalid `--commit`, `--key`, `--state`, `--url`, or invalid JSON body -> non-zero exit before any request
 
 ## `bb completion`
 
