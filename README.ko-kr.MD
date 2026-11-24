@@ -176,8 +176,7 @@ bb completion zsh
 | `bb pipeline list/get/steps/log` | `read:repository`, `read:pipeline` |
 | `bb pipeline run/stop` | `read:repository`, `read:pipeline`, `write:pipeline` |
 | `bb commit report list/get/put/delete` | `read:repository` |
-| `bb commit status list/get` | `read:repository` |
-| `bb commit status create/update` | `read:repository`, `write:repository` |
+| `bb commit status list/get/create/update` | `read:repository` |
 | `bb api` | 호출하는 엔드포인트에 따라 다름 |
 | `bb completion`, `bb version`, `bb skill` | 필요 없음 |
 

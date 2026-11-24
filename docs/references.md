@@ -144,6 +144,7 @@ Operational UX:
 - `GET /repositories/{workspace}/{repo_slug}/commit/{commit}/statuses`
 - `POST /repositories/{workspace}/{repo_slug}/commit/{commit}/statuses/build`
 - `GET|PUT /repositories/{workspace}/{repo_slug}/commit/{commit}/statuses/build/{key}`
+  - The published OpenAPI lists `read:repository:bitbucket` for all four commit status operations, including `POST` and `PUT`.
 
 Command naming rule: prefer Bitbucket API-aligned names (`get`, `update`, `request-changes`, `remove-request-changes`, `stop`). GitHub CLI aliases accepted: `view`→`get`, `edit`→`update`, `close`→`decline`, `checks`→`statuses`, `cancel`→`stop`.
 

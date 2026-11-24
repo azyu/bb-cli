@@ -39,7 +39,7 @@ bb version
 - `bb pipeline list` filters by branch with `--branch <name>` (sent as the `target.branch` query parameter); the pipelines endpoint ignores `q`.
 - Use `bb pr comment --parent <comment-id>` for PR comment replies.
 - `bb commit report` and `bb commit status` require `--commit <sha>` (hex only; local `HEAD` is never assumed). Path-segment identifiers (`--id` on reports, `--key` on status `get`/`update`) accept only ASCII letters, digits, `-` `_` `.` `~` `{` `}`; for any other value use `bb api`.
-- `bb commit status create` and `update` (alias `edit`) accept either structured flags (`--state`, `--url`, optional `--name`/`--description`/`--refname`, plus `--key` on `create`) or `--input <file|->` (mutually exclusive with field flags; `--key` is still required on `update` as the URL path key). `--state` accepts `INPROGRESS`, `SUCCESSFUL`, `FAILED`, or `STOPPED`.
+- `bb commit status create` and `update` (alias `edit`) accept either structured flags (`create`: `--key`, `--state`, `--url`, optional `--name`/`--description`/`--refname`; `update`: `--key` plus at least one update field) or a JSON object via `--input <file|->` (mutually exclusive with field flags; `--key` is still required on `update` as the URL path key). `--state` accepts `INPROGRESS`, `SUCCESSFUL`, `FAILED`, or `STOPPED`.
 - There is no `bb issue` or `bb wiki`: Bitbucket Cloud removed native Issues and Wikis on 2026-08-20, and `bb api .../issues` returns `410 Gone`.
 - Runtime failures in JSON mode return JSON error envelopes; parse/help failures stay text.
 

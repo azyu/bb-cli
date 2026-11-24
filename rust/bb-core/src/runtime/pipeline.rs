@@ -259,7 +259,7 @@ fn handle_pipeline_stop<O: Write>(
     let client = client_from_profile(request.profile.as_deref())?;
     let (pipeline_display_uuid, pipeline_uuid) =
         resolve_pipeline_selector(&client, &workspace, &repo, &selector)?;
-    client.request_text(
+    client.request_no_content(
         Method::POST,
         &format!("/repositories/{workspace}/{repo}/pipelines/{pipeline_uuid}/stopPipeline"),
         &[],
@@ -324,7 +324,7 @@ fn normalize_uuid_arg(flag_name: &str, value: Option<&str>) -> Result<(String, S
     if has_encoded_open && has_encoded_close && trimmed.len() > 6 {
         let inner = &trimmed[3..trimmed.len() - 3];
         validate_uuid_arg(flag_name, inner)?;
-        return Ok((format!("{{{inner}}}"), trimmed.to_string()));
+        return Ok((format!("{{{inner}}}"), format!("%7B{inner}%7D")));
     }
 
     let has_open_brace = trimmed.starts_with('{');
@@ -436,10 +436,9 @@ fn resolve_pipeline_build_lookup(
     normalize_uuid_arg("--build", Some(uuid))
 }
 
-/// The UUID is interpolated into the URL path; allowlist characters so backslashes or dot
-/// segments cannot alter the path.
+/// The UUID is interpolated into the URL path; allowlist characters so backslashes, dot
+/// segments, or internal whitespace cannot alter the path.
 fn validate_uuid_arg(flag_name: &str, value: &str) -> Result<(), CliError> {
-    let value = value.trim();
     if value.is_empty()
         || !value
             .chars()
@@ -533,11 +532,22 @@ mod tests {
     #[test]
     fn validate_uuid_arg_rejects_path_traversal_characters() {
         assert!(validate_uuid_arg("--uuid", "pipe-123").is_ok());
-        for bad in [r"..\..\widgets", "..", ".", "a/b", "a?b", "a#b", "a%2Fb"] {
+        for bad in [
+            r"..\..\widgets",
+            "..",
+            ".",
+            "a/b",
+            "a?b",
+            "a#b",
+            "a%2Fb",
+            " pipe-123 ",
+        ] {
             assert!(
                 validate_uuid_arg("--uuid", bad).is_err(),
                 "{bad} should be rejected"
             );
         }
+        assert!(normalize_uuid_arg("--uuid", Some("%7B pipe-123 %7D")).is_err());
+        assert!(normalize_uuid_arg("--uuid", Some("{ pipe-123 }")).is_err());
     }
 }

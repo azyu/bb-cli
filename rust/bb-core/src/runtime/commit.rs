@@ -238,29 +238,52 @@ fn build_status_write_body<R: Read>(
                 "--input cannot be combined with status field flags".to_string(),
             ));
         }
-        return read_api_input_body_from(request.input.as_deref(), stdin)?
-            .ok_or_else(|| CliError::InvalidInput("--input is required".to_string()));
+        let body = read_api_input_body_from(request.input.as_deref(), stdin)?
+            .ok_or_else(|| CliError::InvalidInput("--input is required".to_string()))?;
+        if !body.is_object() {
+            return Err(CliError::InvalidInput(
+                "--input JSON body must be a JSON object".to_string(),
+            ));
+        }
+        return Ok(body);
     }
 
-    let state = normalize_status_state(request.state.as_deref())?;
-    let url = required_string(
-        "--url is required (or pass --input)",
-        request.url.as_deref(),
-    )?;
-    let mut body = json!({
-        "state": state,
-        "url": url,
-    });
     if include_key {
         let key = required_string(
             "--key is required (or pass --input)",
             request.key.as_deref(),
         )?;
-        body["key"] = Value::String(key.to_string());
+        let state = normalize_status_state(request.state.as_deref())?;
+        let url = required_string(
+            "--url is required (or pass --input)",
+            request.url.as_deref(),
+        )?;
+        let mut body = json!({
+            "key": key,
+            "state": state,
+            "url": url,
+        });
+        set_optional_string(&mut body, "name", request.name.as_deref());
+        set_optional_string(&mut body, "description", request.description.as_deref());
+        set_optional_string(&mut body, "refname", request.refname.as_deref());
+        return Ok(body);
     }
+
+    let mut body = json!({});
+    if optional_trimmed(request.state.as_deref()).is_some() {
+        let state = normalize_status_state(request.state.as_deref())?;
+        body["state"] = Value::String(state);
+    }
+    set_optional_string(&mut body, "url", request.url.as_deref());
     set_optional_string(&mut body, "name", request.name.as_deref());
     set_optional_string(&mut body, "description", request.description.as_deref());
     set_optional_string(&mut body, "refname", request.refname.as_deref());
+    if body.as_object().is_none_or(|map| map.is_empty()) {
+        return Err(CliError::InvalidInput(
+            "at least one update field (--state, --url, --name, --description, --refname) or --input is required"
+                .to_string(),
+        ));
+    }
     Ok(body)
 }
 

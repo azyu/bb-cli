@@ -176,8 +176,7 @@ Only add `write:*` scopes when you need commands that create, update, or delete 
 | `bb pipeline list/get/steps/log` | `read:repository`, `read:pipeline` |
 | `bb pipeline run/stop` | `read:repository`, `read:pipeline`, `write:pipeline` |
 | `bb commit report list/get/put/delete` | `read:repository` |
-| `bb commit status list/get` | `read:repository` |
-| `bb commit status create/update` | `read:repository`, `write:repository` |
+| `bb commit status list/get/create/update` | `read:repository` |
 | `bb api` | Varies by endpoint |
 | `bb completion`, `bb version`, `bb skill` | None |
 

@@ -2881,7 +2881,18 @@ fn root_help_and_completions_omit_removed_issue_and_wiki_groups() {
         let script = String::from_utf8(output.stdout).expect("utf-8");
         assert!(script.contains("commit"), "{shell}");
         assert!(script.contains("stop"), "{shell}");
-        assert!(script.contains("status"), "{shell}");
+        assert!(script.contains("cancel"), "{shell}");
+        assert!(script.contains("create"), "{shell}");
+        assert!(script.contains("report"), "{shell}");
+        assert!(
+            script.contains("report status") || script.contains("'report','status'"),
+            "{shell} should complete commit subcommands: {script}"
+        );
+        assert!(
+            script.contains("list get view create update edit")
+                || script.contains("'list','get','view','create','update','edit'"),
+            "{shell} should complete commit status subcommands: {script}"
+        );
         assert!(!script.contains("issue"), "{shell}");
         assert!(!script.contains("wiki"), "{shell}");
     }
@@ -2981,6 +2992,42 @@ fn pipeline_stop_rejects_path_traversal_uuid_before_any_request() {
     any.assert_hits(0);
 }
 
+#[test]
+fn pipeline_stop_rejects_redirected_200_response() {
+    let server = MockServer::start();
+    let login = server.mock(|when, then| {
+        when.method(GET).path("/login");
+        then.status(200).body("<html>login</html>");
+    });
+    let stop = server.mock(|when, then| {
+        when.method(POST)
+            .path("/2.0/repositories/acme/widgets/pipelines/%7Bpipe-123%7D/stopPipeline");
+        then.status(302)
+            .header("location", format!("{}/login", server.base_url()));
+    });
+    let (_temp, config_path) = report_config(&server);
+
+    let output = bb_command()
+        .args([
+            "pipeline",
+            "stop",
+            "{pipe-123}",
+            "-R",
+            "acme/widgets",
+            "--output",
+            "json",
+        ])
+        .env("BB_CONFIG_PATH", &config_path)
+        .output()
+        .expect("command should run");
+
+    assert!(!output.status.success(), "redirected 200 must fail");
+    let body: serde_json::Value = serde_json::from_slice(&output.stdout).expect("json error");
+    assert_eq!(body["error"]["code"], "api_error");
+    stop.assert();
+    login.assert();
+}
+
 const STATUS_BUILD_PATH: &str =
     "/2.0/repositories/acme/widgets/commit/110daa97/statuses/build/ci-build";
 
@@ -3012,8 +3059,7 @@ fn commit_status_list_renders_table_and_passes_query_params() {
             "110daa97",
             "--q",
             "state=\"SUCCESSFUL\"",
-            "--sort",
-            "-updated_on",
+            "--sort=-updated_on",
         ])
         .env("BB_CONFIG_PATH", &config_path)
         .output()
@@ -3251,15 +3297,11 @@ fn commit_status_update_and_edit_alias_put_build_status() {
     let server = MockServer::start();
     let put_flags = server.mock(|when, then| {
         when.method(PUT).path(STATUS_BUILD_PATH).json_body(json!({
-            "state": "FAILED",
-            "url": "https://ci.example.com/builds/42",
-            "description": "Unit tests failed"
+            "state": "FAILED"
         }));
         then.json_body(json!({
             "key": "ci-build",
-            "state": "FAILED",
-            "url": "https://ci.example.com/builds/42",
-            "description": "Unit tests failed"
+            "state": "FAILED"
         }));
     });
     let (_temp, config_path) = report_config(&server);
@@ -3277,10 +3319,6 @@ fn commit_status_update_and_edit_alias_put_build_status() {
             "ci-build",
             "--state",
             "failed",
-            "--url",
-            "https://ci.example.com/builds/42",
-            "--description",
-            "Unit tests failed",
         ])
         .env("BB_CONFIG_PATH", &config_path)
         .output()
@@ -3288,15 +3326,45 @@ fn commit_status_update_and_edit_alias_put_build_status() {
 
     assert!(output.status.success(), "{output:?}");
     let stdout = String::from_utf8(output.stdout).expect("stdout should be utf-8");
-    assert!(
-        stdout.starts_with("Updated status ci-build (FAILED)\n"),
-        "{stdout}"
-    );
-    assert!(
-        stdout.contains("Description: Unit tests failed"),
-        "{stdout}"
-    );
+    assert_eq!(stdout, "Updated status ci-build (FAILED)\n");
     put_flags.assert();
+}
+
+#[test]
+fn commit_status_create_rejects_non_object_input_json_before_any_request() {
+    let server = MockServer::start();
+    let any = server.mock(|when, then| {
+        when.any_request();
+        then.status(500);
+    });
+    let (_temp, config_path) = report_config(&server);
+
+    for raw in ["[]", "null"] {
+        let output = AssertCommand::from_std(bb_command())
+            .args([
+                "commit",
+                "status",
+                "create",
+                "-R",
+                "acme/widgets",
+                "--commit",
+                "110daa97",
+                "--input",
+                "-",
+                "--output",
+                "json",
+            ])
+            .env("BB_CONFIG_PATH", &config_path)
+            .write_stdin(raw)
+            .timeout(Duration::from_secs(30))
+            .output()
+            .expect("command should run");
+
+        assert!(!output.status.success(), "{raw} should be rejected");
+        let body: serde_json::Value = serde_json::from_slice(&output.stdout).expect("json error");
+        assert_eq!(body["error"]["code"], "invalid_input", "{raw}");
+    }
+    any.assert_hits(0);
 }
 
 #[test]

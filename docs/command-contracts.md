@@ -676,7 +676,7 @@ Shared flags for every `bb commit status` subcommand:
 - Purpose: Create (or overwrite) a build status on a commit (`POST .../commit/{commit}/statuses/build`).
 - Required inputs (either structured flags or `--input`, mutually exclusive):
   - Flag mode: `--key <KEY>`, `--state <INPROGRESS|SUCCESSFUL|FAILED|STOPPED>`, `--url <URL>` (optional: `--name`, `--description`, `--refname`)
-  - JSON mode: `--input <path>` (`-` reads the JSON body from stdin)
+  - JSON mode: `--input <path>` (`-` reads a JSON object body from stdin)
 - Optional flags:
   - `--output` (`text` default, `json`)
 - Output:
@@ -684,7 +684,7 @@ Shared flags for every `bb commit status` subcommand:
   - `json`: created build status object
 - Failure behavior:
   - Combining `--input` with any field flag (`--key`, `--state`, `--url`, `--name`, `--description`, `--refname`) -> non-zero exit before any request
-  - Missing required flags, invalid `--state`, or invalid JSON body -> non-zero exit before any request
+  - Missing required flags, invalid `--state`, or invalid/non-object JSON body -> non-zero exit before any request
 
 ### `bb commit status update`
 - Alias: `bb commit status edit`
@@ -692,8 +692,8 @@ Shared flags for every `bb commit status` subcommand:
 - Required flags:
   - `--commit <SHA>`
   - `--key <KEY>` (URL path segment; always required)
-  - Flag mode: `--state <INPROGRESS|SUCCESSFUL|FAILED|STOPPED>`, `--url <URL>` (optional: `--name`, `--description`, `--refname`)
-  - JSON mode: `--input <path>` (`-` reads the JSON body from stdin; conflicts with field flags other than `--key`)
+  - Flag mode: at least one of `--state <INPROGRESS|SUCCESSFUL|FAILED|STOPPED>`, `--url <URL>`, `--name`, `--description`, `--refname`
+  - JSON mode: `--input <path>` (`-` reads a JSON object body from stdin; conflicts with field flags other than `--key`)
 - Optional flags:
   - `--output` (`text` default, `json`)
 - Output:
@@ -701,7 +701,7 @@ Shared flags for every `bb commit status` subcommand:
   - `json`: updated build status object
 - Failure behavior:
   - Combining `--input` with any body field flag (`--state`, `--url`, `--name`, `--description`, `--refname`) -> non-zero exit before any request
-  - Missing or invalid `--commit`, `--key`, `--state`, `--url`, or invalid JSON body -> non-zero exit before any request
+  - Missing or invalid `--commit`, `--key`, `--state`, no update field provided, or invalid/non-object JSON body -> non-zero exit before any request
 
 ## `bb completion`
 

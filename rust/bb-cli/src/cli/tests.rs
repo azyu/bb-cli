@@ -19,6 +19,9 @@ fn global_repository_selector_populates_repo_target() {
 #[test]
 fn global_repository_selector_rejects_invalid_or_conflicting_inputs() {
     assert!(parse_from(["bb", "pr", "get", "42", "-R", "invalid"]).is_err());
+    assert!(parse_from(["bb", "pipeline", "stop", "123", "-R", "acme/ "]).is_err());
+    assert!(parse_from(["bb", "pipeline", "stop", "123", "-R", " /widgets"]).is_err());
+    assert!(parse_from(["bb", "pipeline", "stop", "123", "-R", "ac me/widgets"]).is_err());
     assert!(
         parse_from([
             "bb",
@@ -564,6 +567,30 @@ fn commit_status_subcommands_and_gh_aliases_parse() {
     ])
     .expect_err("update --input + --state must conflict");
     assert_eq!(err.kind(), clap::error::ErrorKind::ArgumentConflict);
+
+    // --sort must not swallow the following flag as its value; descending sorts use --sort=-field.
+    assert!(
+        parse_from([
+            "bb", "commit", "status", "list", "--commit", "110daa97", "--sort", "--all",
+        ])
+        .is_err()
+    );
+    let sorted = parse_from([
+        "bb",
+        "commit",
+        "status",
+        "list",
+        "--commit",
+        "110daa97",
+        "--sort=-updated_on",
+        "--all",
+    ])
+    .expect("--sort=-updated_on should parse alongside --all");
+    let Request::Commit(CommitRequest::Status(sorted)) = sorted else {
+        panic!("expected commit status");
+    };
+    assert_eq!(sorted.sort.as_deref(), Some("-updated_on"));
+    assert!(sorted.all);
 }
 
 #[test]

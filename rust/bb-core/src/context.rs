@@ -9,8 +9,30 @@ pub fn resolve_repo_target(
     repo_value: Option<&str>,
     require_repo: bool,
 ) -> Result<(String, String), CliError> {
-    let mut workspace = workspace_value.unwrap_or_default().trim().to_string();
-    let mut repo = repo_value.unwrap_or_default().trim().to_string();
+    let mut workspace = match workspace_value {
+        Some(value) => {
+            let trimmed = value.trim();
+            if trimmed.is_empty() {
+                return Err(CliError::InvalidInput(
+                    "--workspace must not be empty".to_string(),
+                ));
+            }
+            trimmed.to_string()
+        }
+        None => String::new(),
+    };
+    let mut repo = match repo_value {
+        Some(value) => {
+            let trimmed = value.trim();
+            if trimmed.is_empty() {
+                return Err(CliError::InvalidInput(
+                    "--repo must not be empty".to_string(),
+                ));
+            }
+            trimmed.to_string()
+        }
+        None => String::new(),
+    };
 
     if workspace.is_empty() || (require_repo && repo.is_empty()) {
         if let Ok((inferred_workspace, inferred_repo)) = infer_bitbucket_repo_from_git(None) {
@@ -158,6 +180,8 @@ mod tests {
         );
 
         for bad in [
+            "",
+            "   ",
             "foo/../victim",
             r"foo\..\victim",
             "..",

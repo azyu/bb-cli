@@ -115,7 +115,7 @@ pub(super) struct StatusListArgs {
     pub(super) all: bool,
     #[arg(long)]
     pub(super) q: Option<String>,
-    #[arg(long, allow_hyphen_values = true)]
+    #[arg(long)]
     pub(super) sort: Option<String>,
     #[arg(long)]
     pub(super) fields: Option<String>,
