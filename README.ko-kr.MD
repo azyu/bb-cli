@@ -89,6 +89,7 @@ bb pr comments 123
 bb pr comments 123 --comment-id 456 --output json
 bb pr comment 123 --content "답글 내용" --parent 456
 bb pr comment-update 123 --comment-id 456 --content "수정된 댓글"
+bb pr comment-resolve 123 --comment-id 456
 bb pr create --title "My PR" --source feature --destination main
 bb api --method POST --input ./body.json repositories/acme/widgets/pullrequests/123/comments
 bb pipeline list
@@ -116,7 +117,7 @@ bb completion zsh
 |------|-----------|
 | `bb auth` | `login`, `status`, `list`, `switch`, `logout` |
 | `bb repo` | `list` |
-| `bb pr` | `list`, `get`, `create`, `update`, `merge`, `approve`, `unapprove`, `request-changes`, `remove-request-changes`, `decline`, `comment`, `comment-update`, `comments`, `diff`, `diffstat`, `statuses`, `activity` |
+| `bb pr` | `list`, `get`, `create`, `update`, `merge`, `approve`, `unapprove`, `request-changes`, `remove-request-changes`, `decline`, `comment`, `comment-update`, `comment-resolve`, `comment-reopen`, `comments`, `diff`, `diffstat`, `statuses`, `activity` |
 | `bb pipeline` | `list`, `get`, `steps`, `log`, `run`, `stop` (`cancel`) |
 | `bb commit` | `report list\|get\|put\|delete`, `status list\|get\|create\|update` |
 | `bb api` | Bitbucket Cloud raw API 엔드포인트 직접 호출 |
@@ -126,7 +127,7 @@ bb completion zsh
 
 > [!NOTE]
 > - 기존 PR을 대상으로 하는 명령은 PR ID를 위치 인자(`<id>`)나 `--id`로 넘길 수 있습니다. `bb pr comments 123`과 `bb pr comments --id 123`은 같게 동작합니다.
-> - `bb pr comments`와 `bb pr comment-update`에서 특정 댓글을 고를 때는 `--comment-id`를 쓰세요. `--id`는 항상 PR ID입니다.
+> - `bb pr comments`, `comment-update`, `comment-resolve`, `comment-reopen`에서 특정 댓글을 고를 때는 `--comment-id`를 쓰세요. `--id`는 항상 PR ID입니다.
 > - 특정 파이프라인을 대상으로 하는 명령(`get`, `steps`, `log`, `stop`)은 위치 인자(빌드 번호 또는 `{uuid}`)나 `--build`/`--uuid`로 대상을 지정합니다.
 > - 스크립트나 에이전트가 응답의 일부 필드만 필요하다면 `--output json`과 `--json-fields`를 함께 쓰세요.
 
@@ -173,6 +174,7 @@ bb completion zsh
 | `bb repo list` | `read:repository` |
 | `bb pr list/get/comments/diff/diffstat/statuses/activity` | `read:repository`, `read:pullrequest` |
 | `bb pr create/update/merge/approve/unapprove/request-changes/remove-request-changes/decline/comment/comment-update` | `read:repository`, `read:pullrequest`, `write:pullrequest` |
+| `bb pr comment-resolve/comment-reopen` | `read:repository`, `read:pullrequest` |
 | `bb pipeline list/get/steps/log` | `read:repository`, `read:pipeline` |
 | `bb pipeline run/stop` | `read:repository`, `read:pipeline`, `write:pipeline` |
 | `bb commit report list/get/put/delete` | `read:repository` |

@@ -1,8 +1,9 @@
 use bb_core::{
-    PrActivityRequest, PrApproveRequest, PrCommentRequest, PrCommentUpdateRequest,
-    PrCommentsRequest, PrCreateRequest, PrDeclineRequest, PrDiffRequest, PrDiffstatRequest,
-    PrGetRequest, PrListRequest, PrMergeRequest, PrRemoveRequestChangesRequest, PrRequest,
-    PrRequestChangesRequest, PrStatusesRequest, PrUnapproveRequest, PrUpdateRequest, Request,
+    PrActivityRequest, PrApproveRequest, PrCommentRequest, PrCommentResolutionRequest,
+    PrCommentUpdateRequest, PrCommentsRequest, PrCreateRequest, PrDeclineRequest, PrDiffRequest,
+    PrDiffstatRequest, PrGetRequest, PrListRequest, PrMergeRequest, PrRemoveRequestChangesRequest,
+    PrRequest, PrRequestChangesRequest, PrStatusesRequest, PrUnapproveRequest, PrUpdateRequest,
+    Request,
 };
 use clap::{Args, Subcommand};
 
@@ -38,6 +39,10 @@ pub(super) enum PrCommands {
     Comment(PrCommentArgs),
     /// Update an existing pull request comment
     CommentUpdate(PrCommentUpdateArgs),
+    /// Resolve a top-level pull request comment thread
+    CommentResolve(PrCommentResolutionArgs),
+    /// Reopen a resolved pull request comment thread
+    CommentReopen(PrCommentResolutionArgs),
     /// List pull request comments or get one comment
     Comments(PrCommentsArgs),
     /// Get the raw pull request diff
@@ -279,6 +284,22 @@ pub(super) struct PrCommentUpdateArgs {
 }
 
 #[derive(Debug, Args)]
+pub(super) struct PrCommentResolutionArgs {
+    #[arg(long)]
+    pub(super) workspace: Option<String>,
+    #[arg(long)]
+    pub(super) repo: Option<String>,
+    #[arg(long, value_name = "PR_ID", help = "Pull request ID")]
+    pub(super) id: Option<String>,
+    #[arg(index = 1, value_name = "PR_ID", conflicts_with = "id")]
+    pub(super) pr_id: Option<String>,
+    #[arg(long, value_name = "COMMENT_ID")]
+    pub(super) comment_id: Option<String>,
+    #[arg(long, default_value = "text")]
+    pub(super) output: String,
+}
+
+#[derive(Debug, Args)]
 pub(super) struct PrCommentsArgs {
     #[arg(long)]
     pub(super) workspace: Option<String>,
@@ -418,6 +439,20 @@ fn parse_positive_usize(value: &str) -> Result<usize, String> {
     Ok(parsed)
 }
 
+fn comment_resolution_request(
+    args: PrCommentResolutionArgs,
+    profile: Option<String>,
+) -> PrCommentResolutionRequest {
+    PrCommentResolutionRequest {
+        workspace: args.workspace,
+        repo: args.repo,
+        id: resolve_pr_id(args.id, args.pr_id),
+        comment_id: args.comment_id,
+        profile,
+        output: args.output,
+    }
+}
+
 fn resolve_pr_id(id: Option<String>, pr_id: Option<String>) -> Option<String> {
     id.or(pr_id)
 }
@@ -536,6 +571,12 @@ pub(super) fn map_request(command: Option<PrCommands>, profile: Option<String>) 
             profile,
             output: args.output,
         }),
+        Some(PrCommands::CommentResolve(args)) => {
+            PrRequest::CommentResolve(comment_resolution_request(args, profile))
+        }
+        Some(PrCommands::CommentReopen(args)) => {
+            PrRequest::CommentReopen(comment_resolution_request(args, profile))
+        }
         Some(PrCommands::Comments(args)) => PrRequest::Comments(PrCommentsRequest {
             workspace: args.workspace,
             repo: args.repo,

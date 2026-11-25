@@ -8,10 +8,11 @@ use crate::context;
 use crate::error::CliError;
 use crate::render::{self, PrTableRow};
 use crate::{
-    ListOutput, PrActivityRequest, PrApproveRequest, PrCommentRequest, PrCommentUpdateRequest,
-    PrCommentsRequest, PrCreateRequest, PrDeclineRequest, PrDiffRequest, PrDiffstatRequest,
-    PrGetRequest, PrListRequest, PrMergeRequest, PrRemoveRequestChangesRequest, PrRequest,
-    PrRequestChangesRequest, PrStatusesRequest, PrUnapproveRequest, PrUpdateRequest, WriteOutput,
+    ListOutput, PrActivityRequest, PrApproveRequest, PrCommentRequest, PrCommentResolutionRequest,
+    PrCommentUpdateRequest, PrCommentsRequest, PrCreateRequest, PrDeclineRequest, PrDiffRequest,
+    PrDiffstatRequest, PrGetRequest, PrListRequest, PrMergeRequest, PrRemoveRequestChangesRequest,
+    PrRequest, PrRequestChangesRequest, PrStatusesRequest, PrUnapproveRequest, PrUpdateRequest,
+    WriteOutput,
 };
 
 use super::support::{
@@ -102,6 +103,8 @@ pub(super) fn handle_pr<O: Write, E: Write>(
         PrRequest::Decline(request) => handle_pr_decline(request, stdout),
         PrRequest::Comment(request) => handle_pr_comment(request, stdout),
         PrRequest::CommentUpdate(request) => handle_pr_comment_update(request, stdout),
+        PrRequest::CommentResolve(request) => handle_pr_comment_resolve(request, stdout),
+        PrRequest::CommentReopen(request) => handle_pr_comment_reopen(request, stdout),
         PrRequest::Comments(request) => handle_pr_comments(request, stdout),
         PrRequest::Diff(request) => handle_pr_diff(request, stdout),
         PrRequest::Diffstat(request) => handle_pr_diffstat(request, stdout),
@@ -586,6 +589,65 @@ fn handle_pr_comment_update<O: Write>(
             }
             Ok(())
         }
+    }
+}
+
+fn handle_pr_comment_resolve<O: Write>(
+    request: &PrCommentResolutionRequest,
+    stdout: &mut O,
+) -> Result<(), CliError> {
+    let output = parse_write_output(&request.output)?;
+    let (workspace, repo) =
+        context::resolve_repo_target(request.workspace.as_deref(), request.repo.as_deref(), true)?;
+    let pr_id = parse_pr_numeric_id(request.id.as_deref())?;
+    let comment_id = parse_comment_numeric_id(request.comment_id.as_deref())?;
+    let client = client_from_profile(request.profile.as_deref())?;
+    let value = client.request_value(
+        Method::POST,
+        &format!(
+            "/repositories/{workspace}/{repo}/pullrequests/{pr_id}/comments/{comment_id}/resolve"
+        ),
+        &[],
+        None,
+    )?;
+
+    match output {
+        WriteOutput::Json => render::print_json(stdout, &value),
+        WriteOutput::Text => writeln!(stdout, "Resolved comment #{comment_id} on PR #{pr_id}")
+            .map_err(CliError::from),
+    }
+}
+
+fn handle_pr_comment_reopen<O: Write>(
+    request: &PrCommentResolutionRequest,
+    stdout: &mut O,
+) -> Result<(), CliError> {
+    let output = parse_write_output(&request.output)?;
+    let (workspace, repo) =
+        context::resolve_repo_target(request.workspace.as_deref(), request.repo.as_deref(), true)?;
+    let pr_id = parse_pr_numeric_id(request.id.as_deref())?;
+    let comment_id = parse_comment_numeric_id(request.comment_id.as_deref())?;
+    let client = client_from_profile(request.profile.as_deref())?;
+    client.request_text(
+        Method::DELETE,
+        &format!(
+            "/repositories/{workspace}/{repo}/pullrequests/{pr_id}/comments/{comment_id}/resolve"
+        ),
+        &[],
+    )?;
+
+    match output {
+        WriteOutput::Text => writeln!(stdout, "Reopened comment #{comment_id} on PR #{pr_id}")
+            .map_err(CliError::from),
+        WriteOutput::Json => render::print_json(
+            stdout,
+            &json!({
+                "id": pr_id.parse::<u64>().unwrap_or_default(),
+                "comment_id": comment_id.parse::<u64>().unwrap_or_default(),
+                "action": "Reopened comment",
+                "ok": true,
+            }),
+        ),
     }
 }
 
