@@ -370,6 +370,36 @@ Naming rule: prefer Bitbucket API-aligned names (`get`, `update`, `request-chang
   - Passing both `<id>` and `--id` -> non-zero exit
   - Unsupported output -> non-zero exit
 
+### `bb pr comment-resolve`
+- Purpose: Resolve a pull request comment thread (`POST .../pullrequests/{id}/comments/{comment_id}/resolve`).
+- Required flags:
+  - `--workspace`, `--repo` unless both can be inferred from local Bitbucket `remote.origin.url`
+  - pull request ID via positional `<id>` or `--id`
+  - `--comment-id` (top-level pull request comment ID)
+- Optional flags:
+  - `--output` (`text` default, `json`)
+- Output:
+  - `text`: `Resolved comment #<comment_id> on PR #<id>`
+  - `json`: comment resolution object returned by the API (`type`, `user`, `created_on`)
+- Failure behavior:
+  - Missing `--comment-id` -> non-zero exit
+  - Non-numeric pull request ID or `--comment-id` value -> non-zero exit
+  - Passing both `<id>` and `--id` -> non-zero exit
+  - Unsupported output -> non-zero exit
+  - API 403 (reply comment, not top-level), 404 (unknown comment), 409 (already resolved) -> non-zero exit with the API error
+
+### `bb pr comment-reopen`
+- Purpose: Reopen a resolved pull request comment thread (`DELETE .../pullrequests/{id}/comments/{comment_id}/resolve`).
+- Required flags: same as `bb pr comment-resolve`.
+- Optional flags:
+  - `--output` (`text` default, `json`)
+- Output:
+  - `text`: `Reopened comment #<comment_id> on PR #<id>`
+  - `json`: synthetic envelope `{"id": <pr_id>, "comment_id": <comment_id>, "action": "Reopened comment", "ok": true}` because the API returns 204 with no body
+- Failure behavior:
+  - Same input validation as `bb pr comment-resolve`
+  - API 403 (reply comment), 404 (unknown or not resolved comment) -> non-zero exit with the API error
+
 ### `bb pr comments`
 - Purpose: List pull request comments, or get a single pull request comment when `--comment-id` is provided.
 - Required flags:

@@ -67,6 +67,9 @@ pub(super) fn apply_repository_target(
             PrRequest::CommentUpdate(request) => {
                 set_repository_target(&mut request.workspace, &mut request.repo, target)
             }
+            PrRequest::CommentResolve(request) | PrRequest::CommentReopen(request) => {
+                set_repository_target(&mut request.workspace, &mut request.repo, target)
+            }
             PrRequest::Comments(request) => {
                 set_repository_target(&mut request.workspace, &mut request.repo, target)
             }

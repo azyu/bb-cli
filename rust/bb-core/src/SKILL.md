@@ -27,6 +27,7 @@ bb version
 - Existing-PR commands accept positional `ID` or `--id`; passing both is an error.
 - For `bb pr comments`, `ID`/`--id` always mean the pull request ID. Use `--comment-id` to target a single comment; never pass a comment ID via `--id`.
 - `bb pr comment` only creates a new comment. To edit an existing one use `bb pr comment-update <PR_ID> --comment-id <id> --content ...`.
+- Resolve a comment thread with `bb pr comment-resolve <PR_ID> --comment-id <id>` and reopen it with `bb pr comment-reopen`. Only top-level comments can be resolved (a reply ID returns 403), and resolving an already-resolved thread returns 409.
 - For write operations, do not guess IDs, branch names, or target repos. Resolve them first.
 - `bb pr create` uses `--destination`; `--body` is an accepted alias for `--description`, but `--base` and `--dest` are not accepted.
 - Use `bb api` when the wrapped command surface does not cover the operation you need.
@@ -61,7 +62,7 @@ bb version
 
 - `list`, `get`, `create`, `update`, `merge`
 - `approve`, `unapprove`, `request-changes`, `remove-request-changes`, `decline`
-- `comment`, `comment-update`, `comments`, `diff`, `diffstat`, `statuses`, `activity`
+- `comment`, `comment-update`, `comment-resolve`, `comment-reopen`, `comments`, `diff`, `diffstat`, `statuses`, `activity`
 
 ### pipeline
 
@@ -135,6 +136,7 @@ bb commit status get --workspace acme --repo widgets --commit 110daa97 --key ci-
 # Write operations
 bb pr create --workspace acme --repo widgets --title "Add widget support" --source feature/widgets --destination main
 bb pr comment 123 --workspace acme --repo widgets --content "Reply text" --parent 456
+bb pr comment-resolve 123 --comment-id 456 --workspace acme --repo widgets --output json
 bb pr create --workspace acme --repo widgets --title "Add widget support" --source feature/widgets --destination main --description "$(cat ./pr-body.md)"
 bb pipeline stop 14588 --workspace acme --repo widgets --output json
 bb commit report put --workspace acme --repo widgets --commit 110daa97 --id mysystem-001 --input ./report.json

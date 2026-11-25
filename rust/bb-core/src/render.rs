@@ -79,7 +79,7 @@ pub fn repo_usage() -> &'static str {
 }
 
 pub fn pr_usage() -> &'static str {
-    "Pull request operations\n\nUsage:\n  bb pr <command>\n\nCommands:\n  list                    List pull requests\n  create                  Create a pull request\n  merge                   Merge a pull request\n  get                     Get a pull request\n  update                  Update a pull request\n  approve                 Approve a pull request\n  unapprove               Unapprove a pull request\n  request-changes         Request changes on a pull request\n  remove-request-changes  Remove change request for a pull request\n  decline                 Decline a pull request\n  comment                 Create a new pull request comment\n  comment-update          Update an existing pull request comment\n  comments                List pull request comments\n  diff                    Get the diff for a pull request\n  diffstat                List pull request file changes and line counts\n  statuses                List commit statuses for a pull request\n  activity                List pull request activity\n"
+    "Pull request operations\n\nUsage:\n  bb pr <command>\n\nCommands:\n  list                    List pull requests\n  create                  Create a pull request\n  merge                   Merge a pull request\n  get                     Get a pull request\n  update                  Update a pull request\n  approve                 Approve a pull request\n  unapprove               Unapprove a pull request\n  request-changes         Request changes on a pull request\n  remove-request-changes  Remove change request for a pull request\n  decline                 Decline a pull request\n  comment                 Create a new pull request comment\n  comment-update          Update an existing pull request comment\n  comment-resolve         Resolve a pull request comment thread\n  comment-reopen          Reopen a resolved pull request comment thread\n  comments                List pull request comments\n  diff                    Get the diff for a pull request\n  diffstat                List pull request file changes and line counts\n  statuses                List commit statuses for a pull request\n  activity                List pull request activity\n"
 }
 
 pub fn pipeline_usage() -> &'static str {
@@ -122,7 +122,7 @@ pub fn bash_completion_script() -> &'static str {
   case "${prev}" in
     auth)       COMPREPLY=($(compgen -W "login status list switch logout" -- "${cur}")); return;;
     repo)       COMPREPLY=($(compgen -W "list" -- "${cur}")); return;;
-    pr)         COMPREPLY=($(compgen -W "list create merge get update approve unapprove request-changes remove-request-changes decline comment comment-update comments diff diffstat statuses activity" -- "${cur}")); return;;
+    pr)         COMPREPLY=($(compgen -W "list create merge get update approve unapprove request-changes remove-request-changes decline comment comment-update comment-resolve comment-reopen comments diff diffstat statuses activity" -- "${cur}")); return;;
     pipeline)   COMPREPLY=($(compgen -W "list get steps log run stop cancel" -- "${cur}")); return;;
     commit)     COMPREPLY=($(compgen -W "report status" -- "${cur}")); return;;
     completion) COMPREPLY=($(compgen -W "bash zsh fish powershell" -- "${cur}")); return;;
@@ -142,7 +142,7 @@ _bb() {
   case $words[1] in
     auth)       subcmds=(login status list switch logout);;
     repo)       subcmds=(list);;
-    pr)         subcmds=(list create merge get update approve unapprove request-changes remove-request-changes decline comment comment-update comments diff diffstat statuses activity);;
+    pr)         subcmds=(list create merge get update approve unapprove request-changes remove-request-changes decline comment comment-update comment-resolve comment-reopen comments diff diffstat statuses activity);;
     pipeline)   subcmds=(list get steps log run stop cancel);;
     commit)
       case $words[2] in
@@ -162,7 +162,7 @@ pub fn fish_completion_script() -> &'static str {
     r#"complete -c bb -f -n '__fish_use_subcommand' -a "auth api repo pr pipeline commit completion version skill help"
 complete -c bb -f -n '__fish_seen_subcommand_from auth' -a "login status list switch logout"
 complete -c bb -f -n '__fish_seen_subcommand_from repo' -a "list"
-complete -c bb -f -n '__fish_seen_subcommand_from pr' -a "list create merge get update approve unapprove request-changes remove-request-changes decline comment comment-update comments diff diffstat statuses activity"
+complete -c bb -f -n '__fish_seen_subcommand_from pr' -a "list create merge get update approve unapprove request-changes remove-request-changes decline comment comment-update comment-resolve comment-reopen comments diff diffstat statuses activity"
 complete -c bb -f -n '__fish_seen_subcommand_from pipeline' -a "list get steps log run stop cancel"
 complete -c bb -f -n '__fish_seen_subcommand_from commit; and not __fish_seen_subcommand_from report status' -a "report status"
 complete -c bb -f -n '__fish_seen_subcommand_from commit; and __fish_seen_subcommand_from report' -a "list get put delete"
@@ -177,7 +177,7 @@ pub fn powershell_completion_script() -> &'static str {
   $subcmds = @{
     'auth'       = @('login','status','list','switch','logout')
     'repo'       = @('list')
-    'pr'         = @('list','create','merge','get','update','approve','unapprove','request-changes','remove-request-changes','decline','comment','comment-update','comments','diff','diffstat','statuses','activity')
+    'pr'         = @('list','create','merge','get','update','approve','unapprove','request-changes','remove-request-changes','decline','comment','comment-update','comment-resolve','comment-reopen','comments','diff','diffstat','statuses','activity')
     'pipeline'   = @('list','get','steps','log','run','stop','cancel')
     'commit'     = @('report','status')
     'completion' = @('bash','zsh','fish','powershell')

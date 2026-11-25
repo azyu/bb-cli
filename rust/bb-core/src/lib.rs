@@ -228,6 +228,17 @@ pub struct PrCommentUpdateRequest {
     pub output: String,
 }
 
+/// Shared by `comment-resolve` and `comment-reopen`, which take the same inputs.
+#[derive(Debug, Clone)]
+pub struct PrCommentResolutionRequest {
+    pub workspace: Option<String>,
+    pub repo: Option<String>,
+    pub id: Option<String>,
+    pub comment_id: Option<String>,
+    pub profile: Option<String>,
+    pub output: String,
+}
+
 #[derive(Debug, Clone)]
 pub struct PrCommentsRequest {
     pub workspace: Option<String>,
@@ -399,6 +410,8 @@ pub enum PrRequest {
     Decline(PrDeclineRequest),
     Comment(PrCommentRequest),
     CommentUpdate(PrCommentUpdateRequest),
+    CommentResolve(PrCommentResolutionRequest),
+    CommentReopen(PrCommentResolutionRequest),
     Comments(PrCommentsRequest),
     Diff(PrDiffRequest),
     Diffstat(PrDiffstatRequest),

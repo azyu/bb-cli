@@ -189,7 +189,7 @@ Rust migration decisions:
   - `bb auth login|status|logout`
   - `bb api`
   - `bb repo list`
-  - `bb pr list|create|merge|get|update|approve|unapprove|request-changes|remove-request-changes|decline|comment|comment-update|comments|diff|diffstat|statuses|activity`
+  - `bb pr list|create|merge|get|update|approve|unapprove|request-changes|remove-request-changes|decline|comment|comment-update|comment-resolve|comment-reopen|comments|diff|diffstat|statuses|activity`
   - `bb pipeline list|get|steps|log|run|stop`
   - `bb commit report list|get|put|delete`, `bb commit status list|get|create|update`
   - `bb completion`

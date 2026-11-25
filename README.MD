@@ -89,6 +89,7 @@ bb pr comments 123
 bb pr comments 123 --comment-id 456 --output json
 bb pr comment 123 --content "Reply text" --parent 456
 bb pr comment-update 123 --comment-id 456 --content "Updated reply text"
+bb pr comment-resolve 123 --comment-id 456
 bb pr create --title "My PR" --source feature --destination main
 bb api --method POST --input ./body.json repositories/acme/widgets/pullrequests/123/comments
 bb pipeline list
@@ -116,7 +117,7 @@ bb completion zsh
 |-------|-------------|
 | `bb auth` | `login`, `status`, `list`, `switch`, `logout` |
 | `bb repo` | `list` |
-| `bb pr` | `list`, `get`, `create`, `update`, `merge`, `approve`, `unapprove`, `request-changes`, `remove-request-changes`, `decline`, `comment`, `comment-update`, `comments`, `diff`, `diffstat`, `statuses`, `activity` |
+| `bb pr` | `list`, `get`, `create`, `update`, `merge`, `approve`, `unapprove`, `request-changes`, `remove-request-changes`, `decline`, `comment`, `comment-update`, `comment-resolve`, `comment-reopen`, `comments`, `diff`, `diffstat`, `statuses`, `activity` |
 | `bb pipeline` | `list`, `get`, `steps`, `log`, `run`, `stop` (`cancel`) |
 | `bb commit` | `report list\|get\|put\|delete`, `status list\|get\|create\|update` |
 | `bb api` | Direct Bitbucket Cloud API requests |
@@ -126,7 +127,7 @@ bb completion zsh
 
 > [!NOTE]
 > - Commands targeting an existing PR accept the ID positionally or with `--id` (`bb pr comments 123` and `bb pr comments --id 123` are equivalent).
-> - In `bb pr comments` and `bb pr comment-update`, pass `--comment-id` to select a comment. `--id` always refers to the pull request.
+> - In `bb pr comments`, `comment-update`, `comment-resolve`, and `comment-reopen`, pass `--comment-id` to select a comment. `--id` always refers to the pull request.
 > - Pipeline commands targeting a run (`get`, `steps`, `log`, `stop`) accept a positional build number or `{uuid}`, or `--build`/`--uuid`.
 > - Combine `--output json` with `--json-fields` when scripts or agents only need a subset of fields.
 
@@ -173,6 +174,7 @@ Only add `write:*` scopes when you need commands that create, update, or delete 
 | `bb repo list` | `read:repository` |
 | `bb pr list/get/comments/diff/diffstat/statuses/activity` | `read:repository`, `read:pullrequest` |
 | `bb pr create/update/merge/approve/unapprove/request-changes/remove-request-changes/decline/comment/comment-update` | `read:repository`, `read:pullrequest`, `write:pullrequest` |
+| `bb pr comment-resolve/comment-reopen` | `read:repository`, `read:pullrequest` |
 | `bb pipeline list/get/steps/log` | `read:repository`, `read:pipeline` |
 | `bb pipeline run/stop` | `read:repository`, `read:pipeline`, `write:pipeline` |
 | `bb commit report list/get/put/delete` | `read:repository` |

@@ -132,6 +132,9 @@ fn wants_json_errors(request: &Request) -> bool {
         Request::Pr(PrRequest::CommentUpdate(req)) => {
             req.output.trim().eq_ignore_ascii_case("json")
         }
+        Request::Pr(PrRequest::CommentResolve(req) | PrRequest::CommentReopen(req)) => {
+            req.output.trim().eq_ignore_ascii_case("json")
+        }
         Request::Pr(PrRequest::Comments(req)) => req.output.trim().eq_ignore_ascii_case("json"),
         Request::Pr(PrRequest::Diff(req)) => req.output.trim().eq_ignore_ascii_case("json"),
         Request::Pr(PrRequest::Diffstat(req)) => req.output.trim().eq_ignore_ascii_case("json"),

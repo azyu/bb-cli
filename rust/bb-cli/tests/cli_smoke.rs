@@ -2190,6 +2190,111 @@ fn pr_comment_update_json_emits_api_object() {
     comment.assert();
 }
 
+fn run_pr_comment_resolution(
+    server: &MockServer,
+    subcommand: &str,
+    output: &str,
+) -> std::process::Output {
+    let temp = tempdir().unwrap();
+    let config_path = temp.path().join("config.json");
+    write_config(&config_path, &format!("{}/2.0", server.base_url()));
+
+    bb_command()
+        .args([
+            "pr",
+            subcommand,
+            "--workspace",
+            "acme",
+            "--repo",
+            "widgets",
+            "42",
+            "--comment-id",
+            "7",
+            "--output",
+            output,
+        ])
+        .env("BB_CONFIG_PATH", &config_path)
+        .output()
+        .expect("command should run")
+}
+
+#[test]
+fn pr_comment_resolve_text_posts_resolve() {
+    let server = MockServer::start();
+    let resolve = server.mock(|when, then| {
+        when.method(POST)
+            .path("/2.0/repositories/acme/widgets/pullrequests/42/comments/7/resolve");
+        then.json_body(json!({"type": "comment_resolution"}));
+    });
+
+    let output = run_pr_comment_resolution(&server, "comment-resolve", "text");
+
+    assert!(output.status.success());
+    let stdout = String::from_utf8(output.stdout).expect("stdout should be utf-8");
+    assert_eq!(stdout, "Resolved comment #7 on PR #42\n");
+    resolve.assert();
+}
+
+#[test]
+fn pr_comment_resolve_json_emits_api_object() {
+    let server = MockServer::start();
+    let resolve = server.mock(|when, then| {
+        when.method(POST)
+            .path("/2.0/repositories/acme/widgets/pullrequests/42/comments/7/resolve");
+        then.json_body(json!({
+            "type": "comment_resolution",
+            "created_on": "2026-11-25T00:00:00Z"
+        }));
+    });
+
+    let output = run_pr_comment_resolution(&server, "comment-resolve", "json");
+
+    assert!(output.status.success());
+    let body: serde_json::Value =
+        serde_json::from_slice(&output.stdout).expect("stdout should be json");
+    assert_eq!(body["type"], "comment_resolution");
+    assert_eq!(body["created_on"], "2026-11-25T00:00:00Z");
+    resolve.assert();
+}
+
+#[test]
+fn pr_comment_reopen_text_deletes_resolve() {
+    let server = MockServer::start();
+    let reopen = server.mock(|when, then| {
+        when.method(DELETE)
+            .path("/2.0/repositories/acme/widgets/pullrequests/42/comments/7/resolve");
+        then.status(204);
+    });
+
+    let output = run_pr_comment_resolution(&server, "comment-reopen", "text");
+
+    assert!(output.status.success());
+    let stdout = String::from_utf8(output.stdout).expect("stdout should be utf-8");
+    assert_eq!(stdout, "Reopened comment #7 on PR #42\n");
+    reopen.assert();
+}
+
+#[test]
+fn pr_comment_reopen_json_emits_synthetic_envelope() {
+    let server = MockServer::start();
+    let reopen = server.mock(|when, then| {
+        when.method(DELETE)
+            .path("/2.0/repositories/acme/widgets/pullrequests/42/comments/7/resolve");
+        then.status(204);
+    });
+
+    let output = run_pr_comment_resolution(&server, "comment-reopen", "json");
+
+    assert!(output.status.success());
+    let body: serde_json::Value =
+        serde_json::from_slice(&output.stdout).expect("stdout should be json");
+    assert_eq!(body["id"], 42);
+    assert_eq!(body["comment_id"], 7);
+    assert_eq!(body["action"], "Reopened comment");
+    assert_eq!(body["ok"], true);
+    reopen.assert();
+}
+
 #[test]
 fn pr_comment_update_missing_comment_id_emits_json_error() {
     let server = MockServer::start();
