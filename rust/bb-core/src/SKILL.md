@@ -39,6 +39,8 @@ bb version
 - Raw `bb api repositories/<workspace>/<repo>/pipelines` calls do not inherit that default. Pass `--sort=-created_on` there when inspecting recent pipelines, and `--paginate` when the full history is required.
 - `bb pipeline list` filters by branch with `--branch <name>` (sent as the `target.branch` query parameter); the pipelines endpoint ignores `q`.
 - Use `bb pr comment --parent <comment-id>` for PR comment replies.
+- `bb pr comments <PR_ID>` without `--all` returns only the first API page (typically 10 comments), which on a long PR silently drops the newest review round. A full first page is the tell: pass `--all`, or use `bb pr activity <PR_ID>`, which lists the newest events first.
+- `bb pr statuses <PR_ID>` returning no rows means no pipeline or build has registered a status yet, not that checks passed. States are `INPROGRESS`, `SUCCESSFUL`, `FAILED`, `STOPPED`.
 - `bb commit report` and `bb commit status` require `--commit <sha>` (hex only; local `HEAD` is never assumed). Path-segment identifiers (`--id` on reports, `--key` on status `get`/`update`) accept only ASCII letters, digits, `-` `_` `.` `~` `{` `}`; for any other value use `bb api`.
 - `bb commit status create` and `update` (alias `edit`) accept either structured flags (`create`: `--key`, `--state`, `--url`, optional `--name`/`--description`/`--refname`; `update`: `--key` plus at least one update field) or a JSON object via `--input <file|->` (mutually exclusive with field flags; `--key` is still required on `update` as the URL path key). `--state` accepts `INPROGRESS`, `SUCCESSFUL`, `FAILED`, or `STOPPED`.
 - There is no `bb issue` or `bb wiki`: Bitbucket Cloud removed native Issues and Wikis on 2026-08-20, and `bb api .../issues` returns `410 Gone`.
